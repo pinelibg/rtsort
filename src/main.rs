@@ -18,6 +18,10 @@ struct Args {
     /// Compare according to human-readable numeric values (e.g., 2K, 1G)
     #[arg(short = 'h', long = "human-numeric-sort")]
     human_numeric_sort: bool,
+
+    /// Reverse the result of comparisons
+    #[arg(short = 'r', long = "reverse")]
+    reverse: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -41,9 +45,17 @@ fn main() -> io::Result<()> {
             .to_string();
 
         let search_result = if args.human_numeric_sort {
-            sorted_lines.binary_search_by(|e| compare_human_numeric(e, &original_line))
+            if args.reverse {
+                sorted_lines.binary_search_by(|e| compare_human_numeric(e, &original_line).reverse())
+            } else {
+                sorted_lines.binary_search_by(|e| compare_human_numeric(e, &original_line))
+            }
         } else {
-            sorted_lines.binary_search_by(|e| compare_normal(e, &original_line))
+            if args.reverse {
+                sorted_lines.binary_search_by(|e| compare_normal(e, &original_line).reverse())
+            } else {
+                sorted_lines.binary_search_by(|e| compare_normal(e, &original_line))
+            }
         };
 
         match search_result {
