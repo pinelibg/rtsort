@@ -16,10 +16,10 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
         return None;
     }
 
-    // Find the end of the numeric part
+    // Find the end of the numeric part (sign only valid at position 0)
     let mut num_end = 0;
     for (i, c) in s.char_indices() {
-        if c.is_ascii_digit() || c == '.' || c == '-' || c == '+' {
+        if c.is_ascii_digit() || c == '.' || (i == 0 && (c == '-' || c == '+')) {
             num_end = i + c.len_utf8();
         } else {
             break;
