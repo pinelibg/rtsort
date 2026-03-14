@@ -55,6 +55,40 @@ mod normal_sort {
     }
 }
 
+mod reverse_sort {
+    use super::*;
+
+    #[test]
+    fn basic_reverse() {
+        cmd()
+            .arg("-r")
+            .write_stdin("apple\ncherry\nbanana\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+    }
+
+    #[test]
+    fn long_flag() {
+        cmd()
+            .arg("--reverse")
+            .write_stdin("a\nc\nb\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("c\nb\na\n"));
+    }
+
+    #[test]
+    fn combined_with_human_numeric() {
+        cmd()
+            .args(["-h", "-r"])
+            .write_stdin("1K\n1G\n1M\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("1G\n1M\n1K\n"));
+    }
+}
+
 mod human_numeric_sort {
     use super::*;
 
@@ -128,6 +162,16 @@ mod human_numeric_sort {
             .assert()
             .success()
             .stdout(predicate::str::diff("1KiB\n1MiB\n1GiB\n"));
+    }
+
+    #[test]
+    fn negative_values() {
+        cmd()
+            .arg("-h")
+            .write_stdin("-1G\n-1K\n-1M\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("-1G\n-1M\n-1K\n"));
     }
 
     #[test]
