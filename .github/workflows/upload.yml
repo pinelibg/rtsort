@@ -37,4 +37,5 @@ jobs:
         with:
           bin: rtsort
           target: ${{ matrix.target }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
