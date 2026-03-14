@@ -23,6 +23,10 @@ struct Args {
     /// Reverse the result of comparisons
     #[arg(short = 'r', long = "reverse")]
     reverse: bool,
+
+    /// Print help
+    #[arg(long, action = clap::ArgAction::Help)]
+    help: Option<bool>,
 }
 
 struct AlternateScreenGuard;

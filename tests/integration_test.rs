@@ -198,6 +198,15 @@ mod edge_cases {
     }
 }
 
+mod help {
+    use super::*;
+
+    #[test]
+    fn help_flag_exits_successfully() {
+        cmd().arg("--help").assert().success();
+    }
+}
+
 mod line_endings {
     use super::*;
 
