@@ -54,10 +54,7 @@ fn main() -> io::Result<()> {
 
     while handle.read_line(&mut line_buffer)? > 0 {
         // Strip the trailing newline
-        let original_line = line_buffer
-            .trim_end_matches('\n')
-            .trim_end_matches('\r')
-            .to_string();
+        let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
         let search_result = if args.human_numeric_sort {
             if args.reverse {

@@ -1,5 +1,12 @@
 use std::cmp::Ordering;
 
+const KB: f64 = 1024.0;
+const MB: f64 = KB * 1024.0;
+const GB: f64 = MB * 1024.0;
+const TB: f64 = GB * 1024.0;
+const PB: f64 = TB * 1024.0;
+const EB: f64 = PB * 1024.0;
+
 /// Parses a string that might contain a human-readable number with an SI suffix
 /// into an `f64` for comparison purposes.
 /// If it fails to parse (or has no valid suffix/number), returns None.
@@ -48,12 +55,12 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
 
     let multiplier: f64 = match suffix_part.to_uppercase().as_str() {
         "" | "B" => 1.0,
-        "K" | "KI" | "KB" | "KIB" => 1024.0,
-        "M" | "MI" | "MB" | "MIB" => 1024.0 * 1024.0,
-        "G" | "GI" | "GB" | "GIB" => 1024.0 * 1024.0 * 1024.0,
-        "T" | "TI" | "TB" | "TIB" => 1024.0 * 1024.0 * 1024.0 * 1024.0,
-        "P" | "PI" | "PB" | "PIB" => 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0,
-        "E" | "EI" | "EB" | "EIB" => 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0,
+        "K" | "KI" | "KB" | "KIB" => KB,
+        "M" | "MI" | "MB" | "MIB" => MB,
+        "G" | "GI" | "GB" | "GIB" => GB,
+        "T" | "TI" | "TB" | "TIB" => TB,
+        "P" | "PI" | "PB" | "PIB" => PB,
+        "E" | "EI" | "EB" | "EIB" => EB,
         _ => {
             // Unrecognized suffix. If it's directly attached without spaces
             // (e.g., "123XYZ"), treat it as not a human number. If there's
@@ -72,13 +79,13 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
 
 /// Comparison function for standard alphabetical sort
 #[must_use]
-pub fn compare_normal(a: &String, b: &String) -> Ordering {
+pub fn compare_normal(a: &str, b: &str) -> Ordering {
     a.cmp(b)
 }
 
 /// Comparison function for human-numeric sort
 #[must_use]
-pub fn compare_human_numeric(a: &String, b: &String) -> Ordering {
+pub fn compare_human_numeric(a: &str, b: &str) -> Ordering {
     let num_a = parse_human_numeric(a);
     let num_b = parse_human_numeric(b);
 
@@ -87,13 +94,12 @@ pub fn compare_human_numeric(a: &String, b: &String) -> Ordering {
             // Compare as f64. If they are exactly equal (or NaN), fallback to string comparison
             va.partial_cmp(&vb).unwrap_or_else(|| a.cmp(b))
         }
-        (Some(_), None) => Ordering::Greater, // Numbers come after non-numbers? Actually `sort -h` puts non-numbers first
+        (Some(_), None) => Ordering::Greater, // Non-numbers sort before numbers (matching `sort -h` behavior)
         (None, Some(_)) => Ordering::Less,
         (None, None) => a.cmp(b), // Both are not numbers, fallback to string sort
     }
 }
 
-// Write some simple tests for this logic
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -103,11 +109,8 @@ mod tests {
         assert_eq!(parse_human_numeric("123"), Some(123.0));
         assert_eq!(parse_human_numeric("1.5"), Some(1.5));
         assert_eq!(parse_human_numeric("2K"), Some(2048.0));
-        assert_eq!(parse_human_numeric("1.5M"), Some(1.5 * 1024.0 * 1024.0));
-        assert_eq!(
-            parse_human_numeric("-5G"),
-            Some(-5.0 * 1024.0 * 1024.0 * 1024.0)
-        );
+        assert_eq!(parse_human_numeric("1.5M"), Some(1.5 * MB));
+        assert_eq!(parse_human_numeric("-5G"), Some(-5.0 * GB));
         assert_eq!(parse_human_numeric("abc"), None);
         assert_eq!(parse_human_numeric("123XYZ"), None);
         assert_eq!(parse_human_numeric("4.0K   ./foo"), Some(4096.0));
