@@ -121,15 +121,15 @@ mod tests {
     #[test]
     fn test_compare_human_numeric() {
         assert_eq!(
-            compare_human_numeric(&"2K".to_string(), &"1M".to_string()),
+            compare_human_numeric("2K", "1M"),
             Ordering::Less
         );
         assert_eq!(
-            compare_human_numeric(&"1.5K".to_string(), &"1500".to_string()),
+            compare_human_numeric("1.5K", "1500"),
             Ordering::Greater // 1.5 * 1024 = 1536 > 1500
         );
         assert_eq!(
-            compare_human_numeric(&"abc".to_string(), &"1K".to_string()),
+            compare_human_numeric("abc", "1K"),
             Ordering::Less // Non-numbers come before numbers
         );
     }
