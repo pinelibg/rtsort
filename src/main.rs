@@ -5,6 +5,7 @@ use crossterm::{
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use rtsort::{compare_human_numeric, compare_normal};
+use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
 #[derive(Parser, Debug)]
@@ -50,25 +51,22 @@ fn main() -> io::Result<()> {
     let mut stderr = stderr();
     let guard = AlternateScreenGuard::new()?;
 
+    let cmp_fn: fn(&str, &str) -> Ordering = if args.human_numeric_sort {
+        compare_human_numeric
+    } else {
+        compare_normal
+    };
+
     let mut line_buffer = String::new();
 
     while handle.read_line(&mut line_buffer)? > 0 {
         // Strip the trailing newline
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
-        let search_result = if args.human_numeric_sort {
-            if args.reverse {
-                sorted_lines.binary_search_by(|e| compare_human_numeric(e, &original_line).reverse())
-            } else {
-                sorted_lines.binary_search_by(|e| compare_human_numeric(e, &original_line))
-            }
-        } else {
-            if args.reverse {
-                sorted_lines.binary_search_by(|e| compare_normal(e, &original_line).reverse())
-            } else {
-                sorted_lines.binary_search_by(|e| compare_normal(e, &original_line))
-            }
-        };
+        let search_result = sorted_lines.binary_search_by(|e| {
+            let ord = cmp_fn(e, &original_line);
+            if args.reverse { ord.reverse() } else { ord }
+        });
 
         match search_result {
             Ok(pos) | Err(pos) => sorted_lines.insert(pos, original_line),
