@@ -52,12 +52,16 @@ fn run_sort_loop(cmp_fn: fn(&str, &str) -> Ordering, reverse: bool) -> io::Resul
 
     // To allow for responsive terminal manipulation even if stdout is piped
     let mut stderr = stderr();
-    let _guard = AlternateScreenGuard::new()?;
+    let mut guard: Option<AlternateScreenGuard> = None;
 
     let mut line_buffer = String::new();
 
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
+
+        if guard.is_none() {
+            guard = Some(AlternateScreenGuard::new()?);
+        }
 
         let search_result = sorted_lines.binary_search_by(|e| {
             let ord = cmp_fn(e, &original_line);
