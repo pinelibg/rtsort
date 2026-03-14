@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload (e.g. v1.2.3)'
+        required: true
 
 permissions:
   contents: write
@@ -26,6 +31,8 @@ jobs:
             target: x86_64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: rtsort
