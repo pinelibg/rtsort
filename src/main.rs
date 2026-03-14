@@ -40,8 +40,7 @@ impl Drop for AlternateScreenGuard {
     }
 }
 
-fn main() -> io::Result<()> {
-    let args = Args::parse();
+fn run_sort_loop(cmp_fn: fn(&str, &str) -> Ordering, reverse: bool) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
 
     let stdin = io::stdin();
@@ -49,23 +48,16 @@ fn main() -> io::Result<()> {
 
     // To allow for responsive terminal manipulation even if stdout is piped
     let mut stderr = stderr();
-    let guard = AlternateScreenGuard::new()?;
-
-    let cmp_fn: fn(&str, &str) -> Ordering = if args.human_numeric_sort {
-        compare_human_numeric
-    } else {
-        compare_normal
-    };
+    let _guard = AlternateScreenGuard::new()?;
 
     let mut line_buffer = String::new();
 
     while handle.read_line(&mut line_buffer)? > 0 {
-        // Strip the trailing newline
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
         let search_result = sorted_lines.binary_search_by(|e| {
             let ord = cmp_fn(e, &original_line);
-            if args.reverse { ord.reverse() } else { ord }
+            if reverse { ord.reverse() } else { ord }
         });
 
         match search_result {
@@ -82,8 +74,19 @@ fn main() -> io::Result<()> {
         line_buffer.clear();
     }
 
-    // Leave alternate screen, then print the final sorted list to stdout
-    drop(guard);
+    Ok(sorted_lines)
+}
+
+fn main() -> io::Result<()> {
+    let args = Args::parse();
+
+    let cmp_fn: fn(&str, &str) -> Ordering = if args.human_numeric_sort {
+        compare_human_numeric
+    } else {
+        compare_normal
+    };
+
+    let sorted_lines = run_sort_loop(cmp_fn, args.reverse)?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {
