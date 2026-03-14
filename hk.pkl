@@ -1,0 +1,42 @@
+amends "package://github.com/jdx/hk/releases/download/v1.38.0/hk@1.38.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.38.0/hk@1.38.0#/Builtins.pkl"
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps {
+            ["cargo-fmt"] {
+                glob = "**/*.rs"
+                stage = "**/*.rs"
+                check_first = true
+                check = "cargo fmt --check"
+                fix = "cargo fmt"
+            }
+            ["cargo-clippy"] {
+                glob = "**/*.rs"
+                check = "cargo clippy --all-targets -- -D warnings"
+            }
+            ["cargo-test"] {
+                exclusive = true
+                check = "cargo test"
+            }
+        }
+    }
+    ["pre-push"] {
+        steps {
+            ["cargo-fmt"] {
+                glob = "**/*.rs"
+                check = "cargo fmt --check"
+            }
+            ["cargo-clippy"] {
+                glob = "**/*.rs"
+                check = "cargo clippy --all-targets -- -D warnings"
+            }
+            ["cargo-test"] {
+                exclusive = true
+                check = "cargo test"
+            }
+        }
+    }
+}
