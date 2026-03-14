@@ -120,10 +120,7 @@ mod tests {
 
     #[test]
     fn test_compare_human_numeric() {
-        assert_eq!(
-            compare_human_numeric("2K", "1M"),
-            Ordering::Less
-        );
+        assert_eq!(compare_human_numeric("2K", "1M"), Ordering::Less);
         assert_eq!(
             compare_human_numeric("1.5K", "1500"),
             Ordering::Greater // 1.5 * 1024 = 1536 > 1500
