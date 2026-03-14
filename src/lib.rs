@@ -7,11 +7,10 @@ const TB: f64 = GB * 1024.0;
 const PB: f64 = TB * 1024.0;
 const EB: f64 = PB * 1024.0;
 
-/// Parses a string that might contain a human-readable number with an SI suffix
-/// into an `f64` for comparison purposes.
-/// If it fails to parse (or has no valid suffix/number), returns None.
-pub fn parse_human_numeric(s: &str) -> Option<f64> {
-    let s = s.trim();
+/// Parses the numeric prefix of a trimmed string into an `f64`, returning
+/// `(value, rest)` where `rest` is the unparsed remainder. Returns `None`
+/// if the string does not begin with a valid number.
+fn parse_numeric_prefix(s: &str) -> Option<(f64, &str)> {
     if s.is_empty() {
         return None;
     }
@@ -35,10 +34,23 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
         return None;
     }
 
-    let num_part = &s[..num_end];
-    let value: f64 = num_part.parse().ok()?;
+    let value: f64 = s[..num_end].parse().ok()?;
+    Some((value, &s[num_end..]))
+}
 
-    let rest = &s[num_end..];
+/// Parses a string's numeric prefix into an `f64`, ignoring any trailing suffix.
+/// Returns `None` if the string does not begin with a valid number.
+pub fn parse_numeric(s: &str) -> Option<f64> {
+    let s = s.trim();
+    parse_numeric_prefix(s).map(|(value, _)| value)
+}
+
+/// Parses a string that might contain a human-readable number with an SI suffix
+/// into an `f64` for comparison purposes.
+/// If it fails to parse (or has no valid suffix/number), returns None.
+pub fn parse_human_numeric(s: &str) -> Option<f64> {
+    let s = s.trim();
+    let (value, rest) = parse_numeric_prefix(s)?;
     let rest_trimmed = rest.trim_start();
 
     // Suffix typically consists of alphabetic characters (like K, M, G, KiB, etc)
@@ -77,6 +89,20 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
     Some(value * multiplier)
 }
 
+/// Comparison function for numeric sort (leading number only, suffix ignored)
+#[must_use]
+pub fn compare_numeric(a: &str, b: &str) -> Ordering {
+    let num_a = parse_numeric(a);
+    let num_b = parse_numeric(b);
+
+    match (num_a, num_b) {
+        (Some(va), Some(vb)) => va.partial_cmp(&vb).unwrap_or_else(|| a.cmp(b)),
+        (Some(_), None) => Ordering::Greater,
+        (None, Some(_)) => Ordering::Less,
+        (None, None) => a.cmp(b),
+    }
+}
+
 /// Comparison function for standard alphabetical sort
 #[must_use]
 pub fn compare_normal(a: &str, b: &str) -> Ordering {
@@ -103,6 +129,22 @@ pub fn compare_human_numeric(a: &str, b: &str) -> Ordering {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_numeric() {
+        assert_eq!(parse_numeric("42"), Some(42.0));
+        assert_eq!(parse_numeric("10K"), Some(10.0));
+        assert_eq!(parse_numeric("2M"), Some(2.0));
+        assert_eq!(parse_numeric("-3"), Some(-3.0));
+        assert_eq!(parse_numeric("abc"), None);
+    }
+
+    #[test]
+    fn test_compare_numeric() {
+        assert_eq!(compare_numeric("10", "2"), Ordering::Greater);
+        assert_eq!(compare_numeric("10K", "2M"), Ordering::Greater); // 10 > 2, suffix ignored
+        assert_eq!(compare_numeric("abc", "1"), Ordering::Less);
+    }
 
     #[test]
     fn test_parse_human_numeric() {

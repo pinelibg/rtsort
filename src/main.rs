@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rtsort::{compare_human_numeric, compare_normal};
+use rtsort::{compare_human_numeric, compare_normal, compare_numeric};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
@@ -16,6 +16,10 @@ use std::io::{self, BufRead, Write, stderr};
     disable_help_flag = true
 )]
 struct Args {
+    /// Compare according to string numerical value
+    #[arg(short = 'n', long = "numeric-sort")]
+    numeric_sort: bool,
+
     /// Compare according to human-readable numeric values (e.g., 2K, 1G)
     #[arg(short = 'h', long = "human-numeric-sort")]
     human_numeric_sort: bool,
@@ -90,6 +94,8 @@ fn main() -> io::Result<()> {
 
     let cmp_fn: fn(&str, &str) -> Ordering = if args.human_numeric_sort {
         compare_human_numeric
+    } else if args.numeric_sort {
+        compare_numeric
     } else {
         compare_normal
     };

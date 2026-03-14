@@ -89,6 +89,70 @@ mod reverse_sort {
     }
 }
 
+mod numeric_sort {
+    use super::*;
+
+    #[test]
+    fn basic_numeric_order() {
+        cmd()
+            .arg("-n")
+            .write_stdin("20\n2\n10\n3\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("2\n3\n10\n20\n"));
+    }
+
+    #[test]
+    fn long_flag() {
+        cmd()
+            .arg("--numeric-sort")
+            .write_stdin("20\n2\n10\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("2\n10\n20\n"));
+    }
+
+    #[test]
+    fn non_numeric_before_numeric() {
+        cmd()
+            .arg("-n")
+            .write_stdin("10\nfoo\n2\nbar\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("bar\nfoo\n2\n10\n"));
+    }
+
+    #[test]
+    fn suffix_ignored() {
+        cmd()
+            .arg("-n")
+            .write_stdin("10K\n2M\n5G\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("2M\n5G\n10K\n"));
+    }
+
+    #[test]
+    fn negative_values() {
+        cmd()
+            .arg("-n")
+            .write_stdin("3\n-1\n2\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("-1\n2\n3\n"));
+    }
+
+    #[test]
+    fn human_numeric_takes_priority_over_numeric() {
+        cmd()
+            .args(["-n", "-h"])
+            .write_stdin("1G\n1K\n1M\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("1K\n1M\n1G\n"));
+    }
+}
+
 mod human_numeric_sort {
     use super::*;
 
