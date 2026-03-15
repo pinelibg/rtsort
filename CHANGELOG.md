@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/pinelibg/rtsort/compare/v0.3.1...v0.3.2) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** set include-component-in-tag=false to match existing tag format ([#17](https://github.com/pinelibg/rtsort/issues/17)) ([dccc4ff](https://github.com/pinelibg/rtsort/commit/dccc4ff8581e8fa325e7846f39f0f1f1d600bdb9))
+
 ## [0.3.1](https://github.com/pinelibg/rtsort/compare/v0.3.0...v0.3.1) (2026-03-15)
 
 

@@ -1,6 +1,6 @@
 [package]
 name = "rtsort"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 description = "A real-time `sort` with a live terminal preview."
 license = "MIT"
