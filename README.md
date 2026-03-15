@@ -34,9 +34,3 @@ cargo test
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 ```
-
-## Project layout
-
-- `src/lib.rs` contains the core comparison and parsing logic.
-- `src/main.rs` contains CLI argument parsing, terminal rendering, and the main input loop.
-- `tests/integration_test.rs` exercises the compiled binary end to end.
