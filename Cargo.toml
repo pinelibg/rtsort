@@ -2,6 +2,7 @@
 name = "rtsort"
 version = "0.2.0"
 edition = "2024"
+description = "A real-time `sort` with a live terminal preview."
 
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }

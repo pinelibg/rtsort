@@ -1,6 +1,8 @@
 # rtsort
 
-`rtsort` reads lines from standard input, maintains a live-sorted view in an alternate terminal screen, and writes the final sorted result to standard output when input ends.
+A real-time `sort` with a live terminal preview.
+
+`rtsort` is a streaming alternative to the standard `sort` command. It displays a continuously updated preview of your sorted data as it arrives, then seamlessly writes the final output to stdout.
 
 ## Features
 
@@ -65,6 +67,12 @@ printf 'a\nc\nb\n' | rtsort -r
 
 # Show only the top 3 results
 printf '5\n1\n4\n2\n3\n' | rtsort -n --top 3
+
+# Sort directories by size (human-readable)
+du -sh */ | rtsort -h
+
+# Find the 5 largest directories
+du -sh */ | rtsort -hr --top 5
 ```
 
 ## Development
