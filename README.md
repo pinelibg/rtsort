@@ -13,6 +13,12 @@ A real-time `sort` with a live terminal preview.
 
 ## Install
 
+### Install with Cargo from crates.io
+
+```bash
+cargo install rtsort
+```
+
 ### Download a release binary
 
 Download the archive for your platform from the [GitHub Releases page](https://github.com/pinelibg/rtsort/releases), extract it, and place the `rtsort` binary somewhere on your `PATH`.
