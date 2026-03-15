@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/pinelibg/rtsort/compare/v0.3.0...v0.3.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* test release workflow with draft-publish pattern ([#13](https://github.com/pinelibg/rtsort/issues/13)) ([10cf4ae](https://github.com/pinelibg/rtsort/commit/10cf4ae8c54d12c302d817e75d1e35286ebee61a))
+
 ## [0.3.0](https://github.com/pinelibg/rtsort/compare/v0.2.0...v0.3.0) (2026-03-15)
 
 
