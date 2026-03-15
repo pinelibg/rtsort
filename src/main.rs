@@ -28,6 +28,10 @@ struct Args {
     #[arg(short = 'r', long = "reverse")]
     reverse: bool,
 
+    /// Output only the first N lines of the sorted result
+    #[arg(short = 't', long = "top")]
+    top: Option<usize>,
+
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
@@ -48,7 +52,11 @@ impl Drop for AlternateScreenGuard {
     }
 }
 
-fn run_sort_loop(cmp_fn: fn(&str, &str) -> Ordering, reverse: bool) -> io::Result<Vec<String>> {
+fn run_sort_loop(
+    cmp_fn: fn(&str, &str) -> Ordering,
+    reverse: bool,
+    top: Option<usize>,
+) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
 
     let stdin = io::stdin();
@@ -67,18 +75,23 @@ fn run_sort_loop(cmp_fn: fn(&str, &str) -> Ordering, reverse: bool) -> io::Resul
             guard = Some(AlternateScreenGuard::new()?);
         }
 
-        let search_result = sorted_lines.binary_search_by(|e| {
+        let pos = match sorted_lines.binary_search_by(|e| {
             let ord = cmp_fn(e, &original_line);
             if reverse { ord.reverse() } else { ord }
-        });
+        }) {
+            Ok(pos) | Err(pos) => pos,
+        };
 
-        match search_result {
-            Ok(pos) | Err(pos) => sorted_lines.insert(pos, original_line),
+        if top.is_none_or(|n| sorted_lines.len() < n || pos < n) {
+            sorted_lines.insert(pos, original_line);
+            if let Some(n) = top {
+                sorted_lines.truncate(n);
+            }
         }
 
         // Redraw from top: upstream stderr output is wiped on the next redraw
         execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-        for line in &sorted_lines {
+        for line in sorted_lines.iter().take(top.unwrap_or(usize::MAX)) {
             writeln!(stderr, "{line}")?;
         }
         stderr.flush()?;
@@ -100,7 +113,7 @@ fn main() -> io::Result<()> {
         compare_normal
     };
 
-    let sorted_lines = run_sort_loop(cmp_fn, args.reverse)?;
+    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top)?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {
