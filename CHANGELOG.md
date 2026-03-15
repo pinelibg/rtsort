@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/pinelibg/rtsort/compare/v0.3.2...v0.3.3) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** use refs/tags/ prefix for checkout ref in build job ([#20](https://github.com/pinelibg/rtsort/issues/20)) ([dd92d81](https://github.com/pinelibg/rtsort/commit/dd92d813a81d6076e406a8faea03667cc8468308))
+
 ## [0.3.2](https://github.com/pinelibg/rtsort/compare/v0.3.1...v0.3.2) (2026-03-15)
 
 
