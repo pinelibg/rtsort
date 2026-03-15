@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/pinelibg/rtsort/compare/v0.3.3...v0.3.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** remove ref from checkout in build job ([#23](https://github.com/pinelibg/rtsort/issues/23)) ([28ce34d](https://github.com/pinelibg/rtsort/commit/28ce34d6f0f2d55c42d74c74ca9af8bafc16cdb2))
+
 ## [0.3.3](https://github.com/pinelibg/rtsort/compare/v0.3.2...v0.3.3) (2026-03-15)
 
 
