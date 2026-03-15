@@ -87,14 +87,14 @@ fn run_sort_loop(
             if let Some(n) = top {
                 sorted_lines.truncate(n);
             }
-        }
 
-        // Redraw from top: upstream stderr output is wiped on the next redraw
-        execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-        for line in sorted_lines.iter().take(top.unwrap_or(usize::MAX)) {
-            writeln!(stderr, "{line}")?;
+            // Redraw from top: upstream stderr output is wiped on the next redraw
+            execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+            for line in &sorted_lines {
+                writeln!(stderr, "{line}")?;
+            }
+            stderr.flush()?;
         }
-        stderr.flush()?;
 
         line_buffer.clear();
     }
