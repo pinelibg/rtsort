@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/pinelibg/rtsort/compare/v0.2.0...v0.3.0) (2026-03-15)
+
+
+### Features
+
+* add --top/-t option to limit output to first N sorted lines ([fe76089](https://github.com/pinelibg/rtsort/commit/fe760891285b8775521c252ee300426897a40e59))
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([#10](https://github.com/pinelibg/rtsort/issues/10)) ([7cc3154](https://github.com/pinelibg/rtsort/commit/7cc31548baf6d21bac308eef4ec56ee875d9820e))
+
+
+### Performance Improvements
+
+* skip terminal redraw when incoming line is discarded by --top ([dc7d6b7](https://github.com/pinelibg/rtsort/commit/dc7d6b7f6a95702dfedd0344ed71dd8fa73ca138))
+
 ## [0.2.0](https://github.com/pinelibg/rtsort/compare/v0.1.0...v0.2.0) (2026-03-14)
 
 
