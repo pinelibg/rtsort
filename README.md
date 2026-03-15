@@ -8,6 +8,46 @@ It is intended for interactive pipelines: input is read line by line, the curren
 
 The project is still evolving, so this README stays intentionally high level. For the exact current behavior and supported flags, use the source as the source of truth.
 
+## Install
+
+Choose the option that fits how you want to use the tool.
+
+### Download a release binary
+
+If a release is available for your platform, download the archive from the [GitHub Releases page](https://github.com/pinelibg/rtsort/releases), extract it, and place the `rtsort` binary somewhere on your `PATH`.
+
+### Install from the private repository with Cargo
+
+This is the simplest option if you already use Rust and have access to the private repository:
+
+```bash
+cargo install --git https://github.com/pinelibg/rtsort.git
+```
+
+If your GitHub access is configured over SSH, you can use:
+
+```bash
+cargo install --git ssh://git@github.com/pinelibg/rtsort.git
+```
+
+### Build from a local clone
+
+If you want to work from a checked out copy of the repository:
+
+```bash
+git clone https://github.com/pinelibg/rtsort.git
+cd rtsort
+cargo install --path .
+```
+
+### Run without installing
+
+To try it directly from the repository:
+
+```bash
+cargo run
+```
+
 ## Quick start
 
 Run from the repository with Cargo:
