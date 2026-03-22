@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/pinelibg/rtsort/compare/v0.4.1...v0.4.2) (2026-03-22)
+
+
+### Bug Fixes
+
+* **ci:** prevent stale release PR caused by draft release visibility ([#34](https://github.com/pinelibg/rtsort/issues/34)) ([c0e5015](https://github.com/pinelibg/rtsort/commit/c0e501554f6510b78015e4e9012b6eb62b115dd9))
+
 ## [0.4.1](https://github.com/pinelibg/rtsort/compare/v0.4.0...v0.4.1) (2026-03-22)
 
 
