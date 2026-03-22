@@ -113,10 +113,10 @@ pub fn compare_normal(a: &str, b: &str) -> Ordering {
 /// When two lines compare equal under case folding, original byte order is used as tiebreaker.
 #[must_use]
 pub fn compare_ignore_case(a: &str, b: &str) -> Ordering {
-    match a.to_uppercase().cmp(&b.to_uppercase()) {
-        Ordering::Equal => a.cmp(b),
-        ord => ord,
-    }
+    a.chars()
+        .flat_map(char::to_uppercase)
+        .cmp(b.chars().flat_map(char::to_uppercase))
+        .then_with(|| a.cmp(b))
 }
 
 /// Comparison function for human-numeric sort
