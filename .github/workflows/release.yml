@@ -58,12 +58,10 @@ jobs:
     needs: [create-release, build]
     if: needs.create-release.outputs.release_created == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Publish release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: gh release edit ${{ needs.create-release.outputs.tag_name }} --draft=false --repo ${{ github.repository }}
 
   create-pr:
