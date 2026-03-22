@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/pinelibg/rtsort/compare/v0.4.2...v0.4.3) (2026-03-22)
+
+
+### Bug Fixes
+
+* **ci:** trigger publish workflow from release publish ([#37](https://github.com/pinelibg/rtsort/issues/37)) ([6de3a93](https://github.com/pinelibg/rtsort/commit/6de3a93247d5bad952e73ddb2780a3a527382486))
+
 ## [0.4.2](https://github.com/pinelibg/rtsort/compare/v0.4.1...v0.4.2) (2026-03-22)
 
 
