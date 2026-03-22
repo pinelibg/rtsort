@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/pinelibg/rtsort/compare/v0.4.0...v0.4.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* **ci:** force tag creation for draft releases ([#31](https://github.com/pinelibg/rtsort/issues/31)) ([a70c756](https://github.com/pinelibg/rtsort/commit/a70c7568084b07a4c1a3848711f46554b1837c26))
+
 ## [0.4.0](https://github.com/pinelibg/rtsort/compare/v0.3.4...v0.4.0) (2026-03-22)
 
 
