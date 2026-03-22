@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/pinelibg/rtsort/compare/v0.4.3...v0.5.0) (2026-03-22)
+
+
+### Features
+
+* add --bottom option to output the last N sorted lines ([#36](https://github.com/pinelibg/rtsort/issues/36)) ([f35c790](https://github.com/pinelibg/rtsort/commit/f35c790566e2a8918c8213f0acc2ce2a30191603))
+
 ## [0.4.3](https://github.com/pinelibg/rtsort/compare/v0.4.2...v0.4.3) (2026-03-22)
 
 
