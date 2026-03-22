@@ -476,3 +476,76 @@ mod top_output {
             .stdout(predicate::str::diff(""));
     }
 }
+
+mod bottom_output {
+    use super::*;
+
+    #[test]
+    fn basic_bottom() {
+        cmd()
+            .args(["--bottom", "3"])
+            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry\ndate\nelderberry\n"));
+    }
+
+    #[test]
+    fn with_reverse() {
+        cmd()
+            .args(["-r", "--bottom", "3"])
+            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+    }
+
+    #[test]
+    fn with_numeric_sort() {
+        cmd()
+            .args(["-n", "--bottom", "3"])
+            .write_stdin("10\n2\n30\n5\n20\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("10\n20\n30\n"));
+    }
+
+    #[test]
+    fn with_human_numeric_sort() {
+        cmd()
+            .args(["-h", "--bottom", "2"])
+            .write_stdin("1G\n1K\n1M\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("1M\n1G\n"));
+    }
+
+    #[test]
+    fn n_greater_than_total() {
+        cmd()
+            .args(["--bottom", "10"])
+            .write_stdin("cherry\napple\nbanana\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+    }
+
+    #[test]
+    fn n_zero() {
+        cmd()
+            .args(["--bottom", "0"])
+            .write_stdin("banana\napple\ncherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff(""));
+    }
+
+    #[test]
+    fn conflicts_with_top() {
+        cmd()
+            .args(["--top", "2", "--bottom", "2"])
+            .write_stdin("banana\napple\n")
+            .assert()
+            .failure();
+    }
+}
