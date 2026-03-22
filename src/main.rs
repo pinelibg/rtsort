@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Args, Parser};
 use crossterm::{
     cursor::MoveTo,
     execute,
@@ -8,15 +8,8 @@ use rtsort::{compare_human_numeric, compare_ignore_case, compare_normal, compare
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
-#[derive(Parser, Debug)]
-#[command(
-    author,
-    version,
-    about = "A real-time sorting CLI utility",
-    disable_help_flag = true
-)]
-#[allow(clippy::struct_excessive_bools)]
-struct Args {
+#[derive(Args, Debug)]
+struct SortModeArgs {
     /// Compare according to string numerical value
     #[arg(short = 'n', long = "numeric-sort")]
     numeric_sort: bool,
@@ -28,6 +21,50 @@ struct Args {
     /// Fold lower case to upper case characters for comparison
     #[arg(short = 'f', long = "ignore-case")]
     ignore_case: bool,
+}
+
+enum SortMode {
+    Normal,
+    Numeric,
+    HumanNumeric,
+    IgnoreCase,
+}
+
+impl From<&SortModeArgs> for SortMode {
+    fn from(args: &SortModeArgs) -> Self {
+        if args.human_numeric_sort {
+            Self::HumanNumeric
+        } else if args.numeric_sort {
+            Self::Numeric
+        } else if args.ignore_case {
+            Self::IgnoreCase
+        } else {
+            Self::Normal
+        }
+    }
+}
+
+impl SortMode {
+    fn comparator(&self) -> fn(&str, &str) -> Ordering {
+        match self {
+            Self::HumanNumeric => compare_human_numeric,
+            Self::Numeric => compare_numeric,
+            Self::IgnoreCase => compare_ignore_case,
+            Self::Normal => compare_normal,
+        }
+    }
+}
+
+#[derive(Parser, Debug)]
+#[command(
+    author,
+    version,
+    about = "A real-time sorting CLI utility",
+    disable_help_flag = true
+)]
+struct Cli {
+    #[command(flatten)]
+    sort_mode: SortModeArgs,
 
     /// Reverse the result of comparisons
     #[arg(short = 'r', long = "reverse")]
@@ -108,18 +145,8 @@ fn run_sort_loop(
 }
 
 fn main() -> io::Result<()> {
-    let args = Args::parse();
-
-    let cmp_fn: fn(&str, &str) -> Ordering = if args.human_numeric_sort {
-        compare_human_numeric
-    } else if args.numeric_sort {
-        compare_numeric
-    } else if args.ignore_case {
-        compare_ignore_case
-    } else {
-        compare_normal
-    };
-
+    let args = Cli::parse();
+    let cmp_fn = SortMode::from(&args.sort_mode).comparator();
     let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top)?;
 
     let mut stdout = io::stdout().lock();
