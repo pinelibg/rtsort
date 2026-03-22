@@ -306,6 +306,51 @@ mod edge_cases {
     }
 }
 
+mod ignore_case_sort {
+    use super::*;
+
+    #[test]
+    fn basic_ignore_case() {
+        cmd()
+            .arg("-f")
+            .write_stdin("banana\nApple\nCherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("Apple\nbanana\nCherry\n"));
+    }
+
+    #[test]
+    fn long_flag() {
+        cmd()
+            .arg("--ignore-case")
+            .write_stdin("banana\nApple\nCherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("Apple\nbanana\nCherry\n"));
+    }
+
+    #[test]
+    fn combined_with_reverse() {
+        cmd()
+            .args(["-f", "-r"])
+            .write_stdin("banana\nApple\nCherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("Cherry\nbanana\nApple\n"));
+    }
+
+    #[test]
+    fn tiebreak_uppercase_before_lowercase() {
+        // When case-insensitively equal, byte order decides: 'A' (65) < 'a' (97)
+        cmd()
+            .arg("-f")
+            .write_stdin("apple\nApple\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("Apple\napple\n"));
+    }
+}
+
 mod help {
     use super::*;
 

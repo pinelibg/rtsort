@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rtsort::{compare_human_numeric, compare_normal, compare_numeric};
+use rtsort::{compare_human_numeric, compare_ignore_case, compare_normal, compare_numeric};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
@@ -15,6 +15,7 @@ use std::io::{self, BufRead, Write, stderr};
     about = "A real-time sorting CLI utility",
     disable_help_flag = true
 )]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Compare according to string numerical value
     #[arg(short = 'n', long = "numeric-sort")]
@@ -23,6 +24,10 @@ struct Args {
     /// Compare according to human-readable numeric values (e.g., 2K, 1G)
     #[arg(short = 'h', long = "human-numeric-sort")]
     human_numeric_sort: bool,
+
+    /// Fold lower case to upper case characters for comparison
+    #[arg(short = 'f', long = "ignore-case")]
+    ignore_case: bool,
 
     /// Reverse the result of comparisons
     #[arg(short = 'r', long = "reverse")]
@@ -109,6 +114,8 @@ fn main() -> io::Result<()> {
         compare_human_numeric
     } else if args.numeric_sort {
         compare_numeric
+    } else if args.ignore_case {
+        compare_ignore_case
     } else {
         compare_normal
     };
