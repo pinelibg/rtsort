@@ -7,7 +7,7 @@ on:
 permissions: {}
 
 jobs:
-  release-please:
+  create-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,10 +20,11 @@ jobs:
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          skip-github-pull-request: true
 
   build:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: create-release
+    if: needs.create-release.outputs.release_created == 'true'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -50,12 +51,12 @@ jobs:
         with:
           bin: rtsort
           target: ${{ matrix.target }}
-          ref: refs/tags/${{ needs.release-please.outputs.tag_name }}
+          ref: refs/tags/${{ needs.create-release.outputs.tag_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    needs: [release-please, build]
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: [create-release, build]
+    if: needs.create-release.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,4 +64,17 @@ jobs:
       - name: Publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit ${{ needs.release-please.outputs.tag_name }} --draft=false --repo ${{ github.repository }}
+        run: gh release edit ${{ needs.create-release.outputs.tag_name }} --draft=false --repo ${{ github.repository }}
+
+  create-pr:
+    needs: [create-release, publish]
+    if: always() && needs.create-release.result == 'success' && (needs.create-release.outputs.release_created != 'true' || needs.publish.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          skip-github-release: true
