@@ -24,6 +24,14 @@ cargo fmt
 
 Integration tests in `tests/integration_test.rs` run the compiled binary end-to-end via `assert_cmd`.
 
+## Documentation
+
+When adding new CLI options or features, update `README.md` to reflect the changes:
+
+- **Features** section — add a bullet for the new capability
+- **Usage > Options** — add the new flag with its description
+- **Usage > Examples** — add a usage example
+
 ## Git Hooks
 
 Pre-commit and pre-push hooks run fmt, clippy, and tests via `hk` (configured in `hk.pkl`, managed by `mise`).
