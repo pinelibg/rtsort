@@ -113,7 +113,7 @@ pub fn compare_normal(a: &str, b: &str) -> Ordering {
 /// When two lines compare equal under case folding, original byte order is used as tiebreaker.
 #[must_use]
 pub fn compare_ignore_case(a: &str, b: &str) -> Ordering {
-    match a.to_lowercase().cmp(&b.to_lowercase()) {
+    match a.to_uppercase().cmp(&b.to_uppercase()) {
         Ordering::Equal => a.cmp(b),
         ord => ord,
     }
@@ -176,6 +176,8 @@ mod tests {
         assert_eq!(compare_ignore_case("Apple", "banana"), Ordering::Less);
         assert_eq!(compare_ignore_case("apple", "Apple"), Ordering::Greater); // tiebreak: 'a' > 'A'
         assert_eq!(compare_ignore_case("Apple", "apple"), Ordering::Less);
+        // "ß".to_uppercase() == "SS" (0x53 0x53) sorts before "T" (0x54)
+        assert_eq!(compare_ignore_case("ß", "t"), Ordering::Less);
     }
 
     #[test]

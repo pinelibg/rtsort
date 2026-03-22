@@ -349,6 +349,17 @@ mod ignore_case_sort {
             .success()
             .stdout(predicate::str::diff("Apple\napple\n"));
     }
+
+    #[test]
+    fn unicode_uppercase_fold() {
+        // "ß".to_uppercase() == "SS" (0x53 0x53) which sorts before "T" (0x54)
+        cmd()
+            .arg("-f")
+            .write_stdin("t\nß\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("ß\nt\n"));
+    }
 }
 
 mod help {
