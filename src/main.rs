@@ -74,6 +74,10 @@ struct Cli {
     #[arg(short = 't', long = "top")]
     top: Option<usize>,
 
+    /// Output only the last N lines of the sorted result
+    #[arg(long = "bottom", conflicts_with = "top")]
+    bottom: Option<usize>,
+
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
@@ -98,6 +102,7 @@ fn run_sort_loop(
     cmp_fn: fn(&str, &str) -> Ordering,
     reverse: bool,
     top: Option<usize>,
+    bottom: Option<usize>,
 ) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
 
@@ -124,10 +129,17 @@ fn run_sort_loop(
             Ok(pos) | Err(pos) => pos,
         };
 
-        if top.is_none_or(|n| sorted_lines.len() < n || pos < n) {
+        if top.is_none_or(|n| sorted_lines.len() < n || pos < n)
+            && bottom.is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
+        {
             sorted_lines.insert(pos, original_line);
             if let Some(n) = top {
                 sorted_lines.truncate(n);
+            }
+            if let Some(n) = bottom
+                && sorted_lines.len() > n
+            {
+                sorted_lines.remove(0);
             }
 
             // Redraw from top: upstream stderr output is wiped on the next redraw
@@ -147,7 +159,7 @@ fn run_sort_loop(
 fn main() -> io::Result<()> {
     let args = Cli::parse();
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
-    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top)?;
+    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top, args.bottom)?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {
