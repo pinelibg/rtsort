@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/pinelibg/rtsort/compare/v0.3.4...v0.4.0) (2026-03-22)
+
+
+### Features
+
+* add case-insensitive sort option (-f/--ignore-case) ([#29](https://github.com/pinelibg/rtsort/issues/29)) ([ee52388](https://github.com/pinelibg/rtsort/commit/ee52388840e999566dea8a7eb0c824763296bea8))
+
+
+### Bug Fixes
+
+* **ci:** correct crates-io-auth-action tag comment for Renovate ([#25](https://github.com/pinelibg/rtsort/issues/25)) ([8b55b53](https://github.com/pinelibg/rtsort/commit/8b55b5320a2d2f10f0657be00813b6a5ff18ef6b))
+
 ## [0.3.4](https://github.com/pinelibg/rtsort/compare/v0.3.3...v0.3.4) (2026-03-15)
 
 
