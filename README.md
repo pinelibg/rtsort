@@ -2,6 +2,8 @@
 
 A real-time `sort` with a live terminal preview.
 
+![demo](assets/demo.gif)
+
 `rtsort` is a streaming alternative to the standard `sort` command. It displays a continuously updated preview of your sorted data as it arrives, then seamlessly writes the final output to stdout.
 
 ## Features
