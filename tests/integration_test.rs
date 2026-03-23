@@ -362,6 +362,20 @@ mod ignore_case_sort {
     }
 }
 
+mod version_sort {
+    use super::*;
+
+    #[test]
+    fn basic_version_order() {
+        cmd()
+            .arg("-V")
+            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+    }
+}
+
 mod help {
     use super::*;
 
