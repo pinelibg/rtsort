@@ -6,6 +6,7 @@ use crossterm::{
 };
 use rtsort::{
     compare_human_numeric, compare_ignore_case, compare_normal, compare_numeric, compare_version,
+    extract_key_field,
 };
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
@@ -84,7 +85,7 @@ struct Cli {
     reverse: bool,
 
     /// Output only the first N lines of the sorted result
-    #[arg(short = 't', long = "top")]
+    #[arg(long = "top")]
     top: Option<usize>,
 
     /// Output only the last N lines of the sorted result
@@ -94,6 +95,14 @@ struct Cli {
     /// Suppress the live terminal preview (no alternate screen)
     #[arg(long = "no-preview")]
     no_preview: bool,
+
+    /// Sort by field N (1-indexed)
+    #[arg(short = 'k', long = "key")]
+    key: Option<usize>,
+
+    /// Field delimiter character (used with -k; default: whitespace)
+    #[arg(short = 't', long = "field-separator")]
+    field_sep: Option<char>,
 
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
@@ -120,11 +129,13 @@ impl Drop for AlternateScreenGuard {
 }
 
 fn run_sort_loop(
-    cmp_fn: fn(&str, &str) -> Ordering,
+    cmp_fn: impl Fn(&str, &str) -> Ordering,
     reverse: bool,
     top: Option<usize>,
     bottom: Option<usize>,
     no_preview: bool,
+    key: Option<usize>,
+    field_sep: Option<char>,
 ) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
 
@@ -145,7 +156,14 @@ fn run_sort_loop(
         }
 
         let pos = match sorted_lines.binary_search_by(|e| {
-            let ord = cmp_fn(e, &original_line);
+            let (key_e, key_line) = match key {
+                Some(n) => (
+                    extract_key_field(e, n, field_sep),
+                    extract_key_field(&original_line, n, field_sep),
+                ),
+                None => (e.as_str(), original_line.as_str()),
+            };
+            let ord = cmp_fn(key_e, key_line);
             if reverse { ord.reverse() } else { ord }
         }) {
             Ok(pos) | Err(pos) => pos,
@@ -183,7 +201,15 @@ fn run_sort_loop(
 fn main() -> io::Result<()> {
     let args = Cli::parse();
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
-    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top, args.bottom, args.no_preview)?;
+    let sorted_lines = run_sort_loop(
+        cmp_fn,
+        args.reverse,
+        args.top,
+        args.bottom,
+        args.no_preview,
+        args.key,
+        args.field_sep,
+    )?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {

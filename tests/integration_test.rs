@@ -462,9 +462,9 @@ mod top_output {
     }
 
     #[test]
-    fn short_flag() {
+    fn long_flag_top() {
         cmd()
-            .args(["-t", "3"])
+            .args(["--top", "3"])
             .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
             .assert()
             .success()
@@ -553,6 +553,51 @@ mod no_preview {
             .assert()
             .success()
             .stdout(predicate::str::diff("apple\nbanana\n"));
+    }
+}
+
+mod key_sort {
+    use super::*;
+
+    #[test]
+    fn sort_by_second_field_whitespace() {
+        cmd()
+            .args(["-k", "2"])
+            .write_stdin("banana 2\napple 3\ncherry 1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry 1\nbanana 2\napple 3\n"));
+    }
+
+    #[test]
+    fn sort_by_second_field_with_separator() {
+        cmd()
+            .args(["-k", "2", "-t", ":"])
+            .write_stdin("banana:2\napple:3\ncherry:1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry:1\nbanana:2\napple:3\n"));
+    }
+
+    #[test]
+    fn missing_field_sorts_as_empty_string() {
+        // Lines with fewer fields than N use empty string as key (sorts first)
+        cmd()
+            .args(["-k", "2"])
+            .write_stdin("banana 2\napple\ncherry 1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("apple\ncherry 1\nbanana 2\n"));
+    }
+
+    #[test]
+    fn long_flags() {
+        cmd()
+            .args(["--key", "2", "--field-separator", "|"])
+            .write_stdin("b|z\na|a\nc|m\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("a|a\nc|m\nb|z\n"));
     }
 }
 
