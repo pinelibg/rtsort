@@ -477,6 +477,40 @@ mod top_output {
     }
 }
 
+mod no_preview {
+    use super::*;
+
+    #[test]
+    fn sorts_correctly_without_preview() {
+        cmd()
+            .arg("--no-preview")
+            .write_stdin("banana\napple\ncherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+    }
+
+    #[test]
+    fn combined_with_reverse() {
+        cmd()
+            .args(["--no-preview", "-r"])
+            .write_stdin("banana\napple\ncherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+    }
+
+    #[test]
+    fn combined_with_top() {
+        cmd()
+            .args(["--no-preview", "--top", "2"])
+            .write_stdin("banana\napple\ncherry\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("apple\nbanana\n"));
+    }
+}
+
 mod bottom_output {
     use super::*;
 

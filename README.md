@@ -13,6 +13,7 @@ A real-time `sort` with a live terminal preview.
 - Case-insensitive sorting
 - Reverse ordering
 - Limit output to the top or bottom N results
+- `--no-preview` mode for scripting without the live terminal display
 
 ## Install
 
@@ -58,6 +59,7 @@ Options:
   -r, --reverse               Reverse the sort order
   -t, --top <N>               Output only the first N lines of the sorted result
       --bottom <N>            Output only the last N lines of the sorted result
+      --no-preview            Suppress the live terminal preview (no alternate screen)
       --help                  Print help
 ```
 
@@ -90,6 +92,9 @@ du -sh */ | rtsort -h
 
 # Find the 5 largest directories
 du -sh */ | rtsort -hr --top 5
+
+# Sort without live terminal preview (useful in scripts)
+printf 'pear\napple\nbanana\n' | rtsort --no-preview
 ```
 
 ## Development
