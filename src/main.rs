@@ -1,4 +1,4 @@
-use clap::{Args, Parser};
+use clap::{ArgGroup, Args, Parser};
 use crossterm::{
     cursor::MoveTo,
     execute,
@@ -12,21 +12,22 @@ use std::io::{self, BufRead, Write, stderr};
 
 #[derive(Args, Debug)]
 #[allow(clippy::struct_excessive_bools)]
+#[command(group(ArgGroup::new("sort_mode").multiple(false)))]
 struct SortModeArgs {
     /// Compare according to string numerical value
-    #[arg(short = 'n', long = "numeric-sort")]
+    #[arg(short = 'n', long = "numeric-sort", group = "sort_mode")]
     numeric_sort: bool,
 
     /// Compare according to human-readable numeric values (e.g., 2K, 1G)
-    #[arg(short = 'h', long = "human-numeric-sort")]
+    #[arg(short = 'h', long = "human-numeric-sort", group = "sort_mode")]
     human_numeric_sort: bool,
 
     /// Fold lower case to upper case characters for comparison
-    #[arg(short = 'f', long = "ignore-case")]
+    #[arg(short = 'f', long = "ignore-case", group = "sort_mode")]
     ignore_case: bool,
 
     /// Sort by version numbers (e.g., 1.9 < 1.10)
-    #[arg(short = 'V', long = "version-sort")]
+    #[arg(short = 'V', long = "version-sort", group = "sort_mode")]
     version_sort: bool,
 }
 
