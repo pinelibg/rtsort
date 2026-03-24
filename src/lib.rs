@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 /// Returns an empty string if the line has fewer than `n` fields.
 pub fn extract_key_field(line: &str, n: usize, sep: Option<char>) -> &str {
     if n == 0 {
-        return line;
+        return "";
     }
     match sep {
         None => line.split_whitespace().nth(n - 1).unwrap_or(""),

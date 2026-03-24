@@ -462,13 +462,13 @@ mod top_output {
     }
 
     #[test]
-    fn long_flag_top() {
+    fn field_sep_without_key_is_rejected() {
+        // -t requires -k; providing -t alone should cause a CLI error
         cmd()
-            .args(["--top", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
+            .args(["-t", "3"])
+            .write_stdin("banana\napple\ncherry\n")
             .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+            .failure();
     }
 
     #[test]

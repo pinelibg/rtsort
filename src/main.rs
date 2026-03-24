@@ -97,11 +97,11 @@ struct Cli {
     no_preview: bool,
 
     /// Sort by field N (1-indexed)
-    #[arg(short = 'k', long = "key")]
+    #[arg(short = 'k', long = "key", value_parser = parse_key_field)]
     key: Option<usize>,
 
     /// Field delimiter character (used with -k; default: whitespace)
-    #[arg(short = 't', long = "field-separator")]
+    #[arg(short = 't', long = "field-separator", requires = "key")]
     field_sep: Option<char>,
 
     /// Print help
@@ -111,6 +111,16 @@ struct Cli {
     /// Print version
     #[arg(long, action = clap::ArgAction::Version)]
     version: Option<bool>,
+}
+
+fn parse_key_field(s: &str) -> Result<usize, String> {
+    let n: usize = s
+        .parse()
+        .map_err(|_| format!("`{s}` is not a valid field number"))?;
+    if n == 0 {
+        return Err("field number must be 1 or greater".to_string());
+    }
+    Ok(n)
 }
 
 struct AlternateScreenGuard;
