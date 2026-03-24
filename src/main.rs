@@ -1,26 +1,34 @@
-use clap::{Args, Parser};
+use clap::{ArgGroup, Args, Parser};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rtsort::{compare_human_numeric, compare_ignore_case, compare_normal, compare_numeric};
+use rtsort::{
+    compare_human_numeric, compare_ignore_case, compare_normal, compare_numeric, compare_version,
+};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
 #[derive(Args, Debug)]
+#[allow(clippy::struct_excessive_bools)]
+#[command(group(ArgGroup::new("sort_mode").multiple(false)))]
 struct SortModeArgs {
     /// Compare according to string numerical value
-    #[arg(short = 'n', long = "numeric-sort")]
+    #[arg(short = 'n', long = "numeric-sort", group = "sort_mode")]
     numeric_sort: bool,
 
     /// Compare according to human-readable numeric values (e.g., 2K, 1G)
-    #[arg(short = 'h', long = "human-numeric-sort")]
+    #[arg(short = 'h', long = "human-numeric-sort", group = "sort_mode")]
     human_numeric_sort: bool,
 
     /// Fold lower case to upper case characters for comparison
-    #[arg(short = 'f', long = "ignore-case")]
+    #[arg(short = 'f', long = "ignore-case", group = "sort_mode")]
     ignore_case: bool,
+
+    /// Sort by version numbers (e.g., 1.9 < 1.10)
+    #[arg(short = 'V', long = "version-sort", group = "sort_mode")]
+    version_sort: bool,
 }
 
 enum SortMode {
@@ -28,6 +36,7 @@ enum SortMode {
     Numeric,
     HumanNumeric,
     IgnoreCase,
+    Version,
 }
 
 impl From<&SortModeArgs> for SortMode {
@@ -38,6 +47,8 @@ impl From<&SortModeArgs> for SortMode {
             Self::Numeric
         } else if args.ignore_case {
             Self::IgnoreCase
+        } else if args.version_sort {
+            Self::Version
         } else {
             Self::Normal
         }
@@ -50,6 +61,7 @@ impl SortMode {
             Self::HumanNumeric => compare_human_numeric,
             Self::Numeric => compare_numeric,
             Self::IgnoreCase => compare_ignore_case,
+            Self::Version => compare_version,
             Self::Normal => compare_normal,
         }
     }
@@ -60,7 +72,8 @@ impl SortMode {
     author,
     version,
     about = "A real-time sorting CLI utility",
-    disable_help_flag = true
+    disable_help_flag = true,
+    disable_version_flag = true
 )]
 struct Cli {
     #[command(flatten)]
@@ -81,6 +94,10 @@ struct Cli {
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
+
+    /// Print version
+    #[arg(long, action = clap::ArgAction::Version)]
+    version: Option<bool>,
 }
 
 struct AlternateScreenGuard;

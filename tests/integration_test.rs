@@ -143,13 +143,12 @@ mod numeric_sort {
     }
 
     #[test]
-    fn human_numeric_takes_priority_over_numeric() {
+    fn human_numeric_and_numeric_are_mutually_exclusive() {
         cmd()
             .args(["-n", "-h"])
             .write_stdin("1G\n1K\n1M\n")
             .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n1M\n1G\n"));
+            .failure();
     }
 }
 
@@ -359,6 +358,52 @@ mod ignore_case_sort {
             .assert()
             .success()
             .stdout(predicate::str::diff("ß\nt\n"));
+    }
+}
+
+mod version_sort {
+    use super::*;
+
+    #[test]
+    fn basic_version_order() {
+        cmd()
+            .arg("-V")
+            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+    }
+
+    #[test]
+    fn long_flag() {
+        cmd()
+            .arg("--version-sort")
+            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+    }
+}
+
+mod sort_mode_conflicts {
+    use super::*;
+
+    #[test]
+    fn numeric_and_version_conflicts() {
+        cmd()
+            .args(["-n", "-V"])
+            .write_stdin("1\n2\n")
+            .assert()
+            .failure();
+    }
+
+    #[test]
+    fn human_numeric_and_numeric_conflicts() {
+        cmd()
+            .args(["-h", "-n"])
+            .write_stdin("1\n2\n")
+            .assert()
+            .failure();
     }
 }
 

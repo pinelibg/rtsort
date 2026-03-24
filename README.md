@@ -9,7 +9,7 @@ A real-time `sort` with a live terminal preview.
 ## Features
 
 - Live terminal display updates as each line arrives
-- Alphabetical, numeric, and human-readable numeric sort modes
+- Alphabetical, numeric, human-readable numeric, and version number sort modes
 - Case-insensitive sorting
 - Reverse ordering
 - Limit output to the top or bottom N results
@@ -55,6 +55,7 @@ Options:
   -n, --numeric-sort          Compare by string numerical value
   -h, --human-numeric-sort    Compare by human-readable numeric values (e.g. 2K, 1G)
   -f, --ignore-case           Fold lower case to upper case characters for comparison
+  -V, --version-sort          Sort by version numbers (e.g. 1.9 < 1.10)
   -r, --reverse               Reverse the sort order
   -t, --top <N>               Output only the first N lines of the sorted result
       --bottom <N>            Output only the last N lines of the sorted result
@@ -72,6 +73,9 @@ printf '10\n2\n30\n' | rtsort -n
 
 # Human-readable numeric sort
 printf '1K\n50\n2M\n' | rtsort -h
+
+# Version sort (1.9 < 1.10 < 2.0)
+printf 'v1.10\nv1.9\nv2.0\nv1.0\n' | rtsort -V
 
 # Case-insensitive sort
 printf 'banana\nApple\ncherry\n' | rtsort -f
