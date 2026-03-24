@@ -4,10 +4,7 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rtsort::{
-    compare_human_numeric, compare_ignore_case, compare_normal, compare_numeric, compare_version,
-    extract_key_field,
-};
+use rtsort::{comparator, extract_key_field};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
 
@@ -59,11 +56,11 @@ impl From<&SortModeArgs> for SortMode {
 impl SortMode {
     fn comparator(&self) -> fn(&str, &str) -> Ordering {
         match self {
-            Self::HumanNumeric => compare_human_numeric,
-            Self::Numeric => compare_numeric,
-            Self::IgnoreCase => compare_ignore_case,
-            Self::Version => compare_version,
-            Self::Normal => compare_normal,
+            Self::HumanNumeric => comparator::compare_human_numeric,
+            Self::Numeric => comparator::compare_numeric,
+            Self::IgnoreCase => comparator::compare_ignore_case,
+            Self::Version => comparator::compare_version,
+            Self::Normal => comparator::compare_normal,
         }
     }
 }
@@ -174,7 +171,7 @@ fn run_sort_loop(
                 None => (e.as_str(), original_line.as_str()),
             };
             let ord = match cmp_fn(key_e, key_line) {
-                Ordering::Equal => compare_normal(e, &original_line),
+                Ordering::Equal => comparator::compare_normal(e, &original_line),
                 other => other,
             };
             if reverse { ord.reverse() } else { ord }
