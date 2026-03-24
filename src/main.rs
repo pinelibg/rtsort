@@ -150,11 +150,11 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     let mut line_buffer = String::new();
 
     while handle.read_line(&mut line_buffer)? > 0 {
-        let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
+        let original_line = line_buffer.trim_end_matches(['\n', '\r']);
 
         let cached_key = args
             .key
-            .map(|n| extract_key_field(&original_line, n, args.field_sep).to_string());
+            .map(|n| extract_key_field(original_line, n, args.field_sep));
 
         if !args.no_preview && guard.is_none() {
             guard = Some(AlternateScreenGuard::new()?);
@@ -162,16 +162,16 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
 
         let pos = match sorted_lines.binary_search_by(|e| {
             let key_e = match &e.0 {
-                Some(k) => k.as_str(),
-                None => e.1.as_str(),
+                Some(k) => k,
+                None => &e.1,
             };
             let key_line = match &cached_key {
-                Some(k) => k.as_str(),
-                None => original_line.as_str(),
+                Some(k) => k,
+                None => original_line,
             };
 
             let ord = match cmp_fn(key_e, key_line) {
-                Ordering::Equal => comparator::compare_normal(&e.1, &original_line),
+                Ordering::Equal => comparator::compare_normal(&e.1, original_line),
                 other => other,
             };
             if args.reverse { ord.reverse() } else { ord }
@@ -184,7 +184,10 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
                 .bottom
                 .is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
         {
-            sorted_lines.insert(pos, (cached_key, original_line));
+            sorted_lines.insert(
+                pos,
+                (cached_key.map(String::from), original_line.to_string()),
+            );
             if let Some(n) = args.top {
                 sorted_lines.truncate(n);
             }
