@@ -599,6 +599,15 @@ mod key_sort {
             .success()
             .stdout(predicate::str::diff("a|a\nc|m\nb|z\n"));
     }
+
+    #[test]
+    fn key_zero_is_rejected() {
+        cmd()
+            .args(["-k", "0"])
+            .write_stdin("a\nb\n")
+            .assert()
+            .failure();
+    }
 }
 
 mod bottom_output {

@@ -173,7 +173,10 @@ fn run_sort_loop(
                 ),
                 None => (e.as_str(), original_line.as_str()),
             };
-            let ord = cmp_fn(key_e, key_line);
+            let ord = match cmp_fn(key_e, key_line) {
+                Ordering::Equal => compare_normal(e, &original_line),
+                other => other,
+            };
             if reverse { ord.reverse() } else { ord }
         }) {
             Ok(pos) | Err(pos) => pos,
