@@ -136,7 +136,7 @@ impl Drop for AlternateScreenGuard {
 }
 
 fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
-    let mut sorted_lines: Vec<String> = Vec::new();
+    let mut sorted_lines: Vec<(Option<String>, String)> = Vec::new();
 
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
 
@@ -152,20 +152,26 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
+        let cached_key = args
+            .key
+            .map(|n| extract_key_field(&original_line, n, args.field_sep).to_string());
+
         if !args.no_preview && guard.is_none() {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
         let pos = match sorted_lines.binary_search_by(|e| {
-            let (key_e, key_line) = match args.key {
-                Some(n) => (
-                    extract_key_field(e, n, args.field_sep),
-                    extract_key_field(&original_line, n, args.field_sep),
-                ),
-                None => (e.as_str(), original_line.as_str()),
+            let key_e = match &e.0 {
+                Some(k) => k.as_str(),
+                None => e.1.as_str(),
             };
+            let key_line = match &cached_key {
+                Some(k) => k.as_str(),
+                None => original_line.as_str(),
+            };
+
             let ord = match cmp_fn(key_e, key_line) {
-                Ordering::Equal => comparator::compare_normal(e, &original_line),
+                Ordering::Equal => comparator::compare_normal(&e.1, &original_line),
                 other => other,
             };
             if args.reverse { ord.reverse() } else { ord }
@@ -178,7 +184,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
                 .bottom
                 .is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
         {
-            sorted_lines.insert(pos, original_line);
+            sorted_lines.insert(pos, (cached_key, original_line));
             if let Some(n) = args.top {
                 sorted_lines.truncate(n);
             }
@@ -191,7 +197,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             if !args.no_preview {
                 // Redraw from top: upstream stderr output is wiped on the next redraw
                 execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-                for line in &sorted_lines {
+                for (_, line) in &sorted_lines {
                     writeln!(stderr, "{line}")?;
                 }
                 stderr.flush()?;
@@ -201,7 +207,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
         line_buffer.clear();
     }
 
-    Ok(sorted_lines)
+    Ok(sorted_lines.into_iter().map(|(_, line)| line).collect())
 }
 
 fn main() -> io::Result<()> {
