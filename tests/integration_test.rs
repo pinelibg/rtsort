@@ -374,6 +374,16 @@ mod version_sort {
             .success()
             .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
     }
+
+    #[test]
+    fn long_flag() {
+        cmd()
+            .arg("--version-sort")
+            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+    }
 }
 
 mod help {

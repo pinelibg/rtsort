@@ -93,6 +93,10 @@ struct Cli {
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
+
+    /// Print version
+    #[arg(long, action = clap::ArgAction::Version)]
+    version: Option<bool>,
 }
 
 struct AlternateScreenGuard;

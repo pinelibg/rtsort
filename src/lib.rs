@@ -177,7 +177,10 @@ pub fn compare_version(a: &str, b: &str) -> Ordering {
         }
     }
 
-    Ordering::Equal
+    // Fall back to lexicographic comparison of the original strings as a tiebreaker
+    // to ensure deterministic ordering when version segments are all equal
+    // (e.g., "v1.0" vs "1.0" after prefix stripping).
+    a.cmp(b)
 }
 
 /// Comparison function for human-numeric sort
@@ -258,5 +261,25 @@ mod tests {
     fn test_compare_version() {
         // 1.9 < 1.10 (numeric segment comparison, not lexicographic)
         assert_eq!(compare_version("1.9", "1.10"), Ordering::Less);
+
+        // Prefix stripping: "v1.0" vs "1.0" — after stripping both resolve to "1.0",
+        // but the original strings differ, so tiebreaker a.cmp(b) applies.
+        // "1.0" < "v1.0" lexicographically (b'1' < b'v')
+        assert_eq!(compare_version("v1.0", "1.0"), Ordering::Greater);
+        assert_eq!(compare_version("1.0", "v1.0"), Ordering::Less);
+
+        // Leading zeros: "1.02" == "1.2" numerically (02 parsed as 2), tiebreaker applies.
+        // "1.02" < "1.2" lexicographically
+        assert_eq!(compare_version("1.02", "1.2"), Ordering::Less);
+        assert_eq!(compare_version("1.2", "1.02"), Ordering::Greater);
+
+        // Pre-release: "1.0-rc1" vs "1.0" — "1.0-rc1" has more segments, so it sorts after "1.0"
+        assert_eq!(compare_version("1.0-rc1", "1.0"), Ordering::Greater);
+        assert_eq!(compare_version("1.0", "1.0-rc1"), Ordering::Less);
+
+        // Basic ordering chain
+        assert_eq!(compare_version("v1.0", "v1.9"), Ordering::Less);
+        assert_eq!(compare_version("v1.9", "v1.10"), Ordering::Less);
+        assert_eq!(compare_version("v1.10", "v2.0"), Ordering::Less);
     }
 }
