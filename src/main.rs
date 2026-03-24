@@ -101,6 +101,10 @@ struct Cli {
     #[arg(short = 't', long = "field-separator", requires = "key")]
     field_sep: Option<char>,
 
+    /// Remove duplicate lines from the sorted output
+    #[arg(short = 'u', long = "unique")]
+    unique: bool,
+
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
@@ -160,7 +164,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
-        let pos = match sorted_lines.binary_search_by(|e| {
+        let search_result = sorted_lines.binary_search_by(|e| {
             let key_e = match &e.0 {
                 Some(k) => k,
                 None => &e.1,
@@ -175,7 +179,15 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
                 other => other,
             };
             if args.reverse { ord.reverse() } else { ord }
-        }) {
+        });
+
+        // When unique is enabled, Ok(_) means a truly equal line (same key and same content)
+        // already exists — skip insertion.
+        let pos = match search_result {
+            Ok(_) if args.unique => {
+                line_buffer.clear();
+                continue;
+            }
             Ok(pos) | Err(pos) => pos,
         };
 
