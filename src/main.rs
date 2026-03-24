@@ -91,6 +91,10 @@ struct Cli {
     #[arg(long = "bottom", conflicts_with = "top")]
     bottom: Option<usize>,
 
+    /// Suppress the live terminal preview (no alternate screen)
+    #[arg(long = "no-preview")]
+    no_preview: bool,
+
     /// Print help
     #[arg(long, action = clap::ArgAction::Help)]
     help: Option<bool>,
@@ -120,6 +124,7 @@ fn run_sort_loop(
     reverse: bool,
     top: Option<usize>,
     bottom: Option<usize>,
+    no_preview: bool,
 ) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
 
@@ -135,7 +140,7 @@ fn run_sort_loop(
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
-        if guard.is_none() {
+        if !no_preview && guard.is_none() {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
@@ -159,12 +164,14 @@ fn run_sort_loop(
                 sorted_lines.remove(0);
             }
 
-            // Redraw from top: upstream stderr output is wiped on the next redraw
-            execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-            for line in &sorted_lines {
-                writeln!(stderr, "{line}")?;
+            if !no_preview {
+                // Redraw from top: upstream stderr output is wiped on the next redraw
+                execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+                for line in &sorted_lines {
+                    writeln!(stderr, "{line}")?;
+                }
+                stderr.flush()?;
             }
-            stderr.flush()?;
         }
 
         line_buffer.clear();
@@ -176,7 +183,7 @@ fn run_sort_loop(
 fn main() -> io::Result<()> {
     let args = Cli::parse();
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
-    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top, args.bottom)?;
+    let sorted_lines = run_sort_loop(cmp_fn, args.reverse, args.top, args.bottom, args.no_preview)?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {
