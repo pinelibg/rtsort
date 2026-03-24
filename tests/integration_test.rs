@@ -462,13 +462,13 @@ mod top_output {
     }
 
     #[test]
-    fn short_flag() {
+    fn field_sep_without_key_is_rejected() {
+        // -t requires -k; providing -t alone should cause a CLI error
         cmd()
             .args(["-t", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
+            .write_stdin("banana\napple\ncherry\n")
             .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+            .failure();
     }
 
     #[test]
@@ -553,6 +553,60 @@ mod no_preview {
             .assert()
             .success()
             .stdout(predicate::str::diff("apple\nbanana\n"));
+    }
+}
+
+mod key_sort {
+    use super::*;
+
+    #[test]
+    fn sort_by_second_field_whitespace() {
+        cmd()
+            .args(["-k", "2"])
+            .write_stdin("banana 2\napple 3\ncherry 1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry 1\nbanana 2\napple 3\n"));
+    }
+
+    #[test]
+    fn sort_by_second_field_with_separator() {
+        cmd()
+            .args(["-k", "2", "-t", ":"])
+            .write_stdin("banana:2\napple:3\ncherry:1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("cherry:1\nbanana:2\napple:3\n"));
+    }
+
+    #[test]
+    fn missing_field_sorts_as_empty_string() {
+        // Lines with fewer fields than N use empty string as key (sorts first)
+        cmd()
+            .args(["-k", "2"])
+            .write_stdin("banana 2\napple\ncherry 1\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("apple\ncherry 1\nbanana 2\n"));
+    }
+
+    #[test]
+    fn long_flags() {
+        cmd()
+            .args(["--key", "2", "--field-separator", "|"])
+            .write_stdin("b|z\na|a\nc|m\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("a|a\nc|m\nb|z\n"));
+    }
+
+    #[test]
+    fn key_zero_is_rejected() {
+        cmd()
+            .args(["-k", "0"])
+            .write_stdin("a\nb\n")
+            .assert()
+            .failure();
     }
 }
 

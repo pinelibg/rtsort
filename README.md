@@ -14,6 +14,7 @@ A real-time `sort` with a live terminal preview.
 - Reverse ordering
 - Limit output to the top or bottom N results
 - `--no-preview` mode for scripting without the live terminal display
+- Sort by a specific field with a configurable field delimiter
 
 ## Install
 
@@ -58,9 +59,11 @@ Options:
   -f, --ignore-case           Fold lower case to upper case characters for comparison
   -V, --version-sort          Sort by version numbers (e.g. 1.9 < 1.10)
   -r, --reverse               Reverse the sort order
-  -t, --top <N>               Output only the first N lines of the sorted result
+      --top <N>               Output only the first N lines of the sorted result
       --bottom <N>            Output only the last N lines of the sorted result
       --no-preview            Suppress the live terminal preview (no alternate screen)
+  -k, --key <N>               Sort by field N (1-indexed)
+  -t, --field-separator <CHAR> Field delimiter character (used with -k; default: whitespace)
       --help                  Print help
 ```
 
@@ -90,6 +93,12 @@ printf '5\n1\n4\n2\n3\n' | rtsort -n --top 3
 
 # Show only the bottom 3 results
 printf '5\n1\n4\n2\n3\n' | rtsort -n --bottom 3
+
+# Sort by the second whitespace-delimited field
+printf 'foo 3\nbar 1\nbaz 2\n' | rtsort -k 2
+
+# Sort by the second colon-delimited field
+printf 'foo:3\nbar:1\nbaz:2\n' | rtsort -k 2 -t ':'
 
 # Sort directories by size (human-readable)
 du -sh */ | rtsort -h
