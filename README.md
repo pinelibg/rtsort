@@ -13,6 +13,7 @@ A real-time `sort` with a live terminal preview.
 - Case-insensitive sorting
 - Reverse ordering
 - Limit output to the top or bottom N results
+- Deduplicate lines that compare equal under the active sort mode (like `sort -u`)
 - `--no-preview` mode for scripting without the live terminal display
 - Sort by a specific field with a configurable field delimiter
 
@@ -59,6 +60,7 @@ Options:
   -f, --ignore-case           Fold lower case to upper case characters for comparison
   -V, --version-sort          Sort by version numbers (e.g. 1.9 < 1.10)
   -r, --reverse               Reverse the sort order
+  -u, --unique                Remove lines that compare equal under the active sort mode
       --top <N>               Output only the first N lines of the sorted result
       --bottom <N>            Output only the last N lines of the sorted result
       --no-preview            Suppress the live terminal preview (no alternate screen)
@@ -93,6 +95,9 @@ printf '5\n1\n4\n2\n3\n' | rtsort -n --top 3
 
 # Show only the bottom 3 results
 printf '5\n1\n4\n2\n3\n' | rtsort -n --bottom 3
+
+# Remove duplicate lines
+printf 'b\na\nb\na\n' | rtsort -u
 
 # Sort by the second whitespace-delimited field
 printf 'foo 3\nbar 1\nbaz 2\n' | rtsort -k 2

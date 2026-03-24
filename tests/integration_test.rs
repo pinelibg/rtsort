@@ -610,6 +610,43 @@ mod key_sort {
     }
 }
 
+mod unique_sort {
+    use super::*;
+
+    #[test]
+    fn removes_duplicates() {
+        cmd()
+            .arg("-u")
+            .write_stdin("b\na\nb\na\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("a\nb\n"));
+    }
+
+    #[test]
+    fn top_with_interleaved_duplicates() {
+        // Without correct fix, dedup after windowed top-2 could yield fewer than 2 unique lines.
+        // Input sorted: a a b b c c — top 2 unique should be a, b.
+        cmd()
+            .args(["-u", "--top", "2"])
+            .write_stdin("b\na\nb\nc\na\nc\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("a\nb\n"));
+    }
+
+    #[test]
+    fn bottom_with_interleaved_duplicates() {
+        // Input sorted: a a b b c c — bottom 2 unique should be b, c.
+        cmd()
+            .args(["-u", "--bottom", "2"])
+            .write_stdin("b\na\nb\nc\na\nc\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("b\nc\n"));
+    }
+}
+
 mod bottom_output {
     use super::*;
 
