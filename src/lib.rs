@@ -119,28 +119,40 @@ pub fn compare_ignore_case(a: &str, b: &str) -> Ordering {
         .then_with(|| a.cmp(b))
 }
 
-/// Parses a version string into a sequence of alternating digit/non-digit segments,
-/// stripping a leading `v` or `V` prefix first.
-fn parse_version_segments(s: &str) -> Vec<&str> {
+/// Returns an iterator that lazily yields alternating digit/non-digit segments of a
+/// version string, stripping a leading `v` or `V` prefix first.
+fn version_segments(s: &str) -> impl Iterator<Item = &str> {
     let stripped = s.strip_prefix(['v', 'V']).unwrap_or(s);
-    if stripped.is_empty() {
-        return vec![];
+    VersionSegments {
+        remaining: stripped,
+        done: stripped.is_empty(),
     }
+}
 
-    let mut segments = Vec::new();
-    let mut start = 0;
-    let mut in_digits = stripped.as_bytes().first().is_some_and(u8::is_ascii_digit);
+struct VersionSegments<'a> {
+    remaining: &'a str,
+    done: bool,
+}
 
-    for (i, c) in stripped.char_indices() {
-        let is_digit = c.is_ascii_digit();
-        if is_digit != in_digits {
-            segments.push(&stripped[start..i]);
-            start = i;
-            in_digits = is_digit;
+impl<'a> Iterator for VersionSegments<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<&'a str> {
+        if self.done || self.remaining.is_empty() {
+            return None;
         }
+
+        let in_digits = self.remaining.as_bytes()[0].is_ascii_digit();
+        let end = self
+            .remaining
+            .char_indices()
+            .find(|(_, c)| c.is_ascii_digit() != in_digits)
+            .map_or(self.remaining.len(), |(i, _)| i);
+
+        let seg = &self.remaining[..end];
+        self.remaining = &self.remaining[end..];
+        Some(seg)
     }
-    segments.push(&stripped[start..]);
-    segments
 }
 
 /// Comparison function for version sort (GNU `sort -V` compatible).
@@ -148,32 +160,35 @@ fn parse_version_segments(s: &str) -> Vec<&str> {
 /// A leading `v`/`V` prefix is stripped before comparison.
 #[must_use]
 pub fn compare_version(a: &str, b: &str) -> Ordering {
-    let ver_segs_a = parse_version_segments(a);
-    let ver_segs_b = parse_version_segments(b);
+    let mut iter_a = version_segments(a);
+    let mut iter_b = version_segments(b);
 
-    let len = ver_segs_a.len().max(ver_segs_b.len());
-    for i in 0..len {
-        let seg_left = ver_segs_a.get(i).copied().unwrap_or("");
-        let seg_right = ver_segs_b.get(i).copied().unwrap_or("");
+    loop {
+        match (iter_a.next(), iter_b.next()) {
+            (None, None) => break,
+            (Some(seg_left), Some(seg_right)) => {
+                if seg_left == seg_right {
+                    continue;
+                }
 
-        if seg_left == seg_right {
-            continue;
-        }
+                // Both digit segments: compare numerically
+                let left_digits = seg_left.as_bytes().first().is_some_and(u8::is_ascii_digit);
+                let right_digits = seg_right.as_bytes().first().is_some_and(u8::is_ascii_digit);
 
-        // Both digit segments: compare numerically
-        let left_digits = seg_left.bytes().next().is_some_and(|b| b.is_ascii_digit());
-        let right_digits = seg_right.bytes().next().is_some_and(|b| b.is_ascii_digit());
+                let ord = if left_digits && right_digits {
+                    let num_left: u64 = seg_left.parse().unwrap_or(0);
+                    let num_right: u64 = seg_right.parse().unwrap_or(0);
+                    num_left.cmp(&num_right)
+                } else {
+                    seg_left.cmp(seg_right)
+                };
 
-        let ord = if left_digits && right_digits {
-            let num_left: u64 = seg_left.parse().unwrap_or(0);
-            let num_right: u64 = seg_right.parse().unwrap_or(0);
-            num_left.cmp(&num_right)
-        } else {
-            seg_left.cmp(seg_right)
-        };
-
-        if ord != Ordering::Equal {
-            return ord;
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+            (Some(_), None) => return Ordering::Greater,
+            (None, Some(_)) => return Ordering::Less,
         }
     }
 
