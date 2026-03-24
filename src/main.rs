@@ -135,16 +135,10 @@ impl Drop for AlternateScreenGuard {
     }
 }
 
-fn run_sort_loop(
-    cmp_fn: impl Fn(&str, &str) -> Ordering,
-    reverse: bool,
-    top: Option<usize>,
-    bottom: Option<usize>,
-    no_preview: bool,
-    key: Option<usize>,
-    field_sep: Option<char>,
-) -> io::Result<Vec<String>> {
+fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     let mut sorted_lines: Vec<String> = Vec::new();
+
+    let cmp_fn = SortMode::from(&args.sort_mode).comparator();
 
     let stdin = io::stdin();
     let mut handle = stdin.lock();
@@ -158,15 +152,15 @@ fn run_sort_loop(
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']).to_string();
 
-        if !no_preview && guard.is_none() {
+        if !args.no_preview && guard.is_none() {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
         let pos = match sorted_lines.binary_search_by(|e| {
-            let (key_e, key_line) = match key {
+            let (key_e, key_line) = match args.key {
                 Some(n) => (
-                    extract_key_field(e, n, field_sep),
-                    extract_key_field(&original_line, n, field_sep),
+                    extract_key_field(e, n, args.field_sep),
+                    extract_key_field(&original_line, n, args.field_sep),
                 ),
                 None => (e.as_str(), original_line.as_str()),
             };
@@ -174,25 +168,27 @@ fn run_sort_loop(
                 Ordering::Equal => comparator::compare_normal(e, &original_line),
                 other => other,
             };
-            if reverse { ord.reverse() } else { ord }
+            if args.reverse { ord.reverse() } else { ord }
         }) {
             Ok(pos) | Err(pos) => pos,
         };
 
-        if top.is_none_or(|n| sorted_lines.len() < n || pos < n)
-            && bottom.is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
+        if args.top.is_none_or(|n| sorted_lines.len() < n || pos < n)
+            && args
+                .bottom
+                .is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
         {
             sorted_lines.insert(pos, original_line);
-            if let Some(n) = top {
+            if let Some(n) = args.top {
                 sorted_lines.truncate(n);
             }
-            if let Some(n) = bottom
+            if let Some(n) = args.bottom
                 && sorted_lines.len() > n
             {
                 sorted_lines.remove(0);
             }
 
-            if !no_preview {
+            if !args.no_preview {
                 // Redraw from top: upstream stderr output is wiped on the next redraw
                 execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
                 for line in &sorted_lines {
@@ -210,16 +206,7 @@ fn run_sort_loop(
 
 fn main() -> io::Result<()> {
     let args = Cli::parse();
-    let cmp_fn = SortMode::from(&args.sort_mode).comparator();
-    let sorted_lines = run_sort_loop(
-        cmp_fn,
-        args.reverse,
-        args.top,
-        args.bottom,
-        args.no_preview,
-        args.key,
-        args.field_sep,
-    )?;
+    let sorted_lines = run_sort_loop(&args)?;
 
     let mut stdout = io::stdout().lock();
     for line in &sorted_lines {
