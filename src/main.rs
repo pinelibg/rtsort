@@ -7,6 +7,7 @@ use crossterm::{
 use rtsort::{comparator, extract_key_field};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
+use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
 use std::time::{Duration, Instant};
 
 #[derive(Args, Debug)]
@@ -129,17 +130,21 @@ fn parse_key_field(s: &str) -> Result<usize, String> {
     Ok(n)
 }
 
+static IN_ALTERNATE_SCREEN: AtomicBool = AtomicBool::new(false);
+
 struct AlternateScreenGuard;
 
 impl AlternateScreenGuard {
     fn new() -> io::Result<Self> {
         execute!(stderr(), EnterAlternateScreen)?;
+        IN_ALTERNATE_SCREEN.store(true, AtomicOrdering::SeqCst);
         Ok(Self)
     }
 }
 
 impl Drop for AlternateScreenGuard {
     fn drop(&mut self) {
+        IN_ALTERNATE_SCREEN.store(false, AtomicOrdering::SeqCst);
         let _ = execute!(stderr(), LeaveAlternateScreen);
     }
 }
@@ -249,6 +254,16 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
 
 fn main() -> io::Result<()> {
     let args = Cli::parse();
+
+    ctrlc::set_handler(|| {
+        let mut stderr = stderr().lock();
+        if IN_ALTERNATE_SCREEN.load(AtomicOrdering::SeqCst) {
+            let _ = execute!(stderr, LeaveAlternateScreen);
+        }
+        std::process::exit(130);
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let sorted_lines = run_sort_loop(&args)?;
 
     let mut stdout = io::stdout().lock();
