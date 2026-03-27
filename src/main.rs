@@ -7,6 +7,7 @@ use crossterm::{
 use rtsort::{comparator, extract_key_field};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
+use std::time::{Duration, Instant};
 
 #[derive(Args, Debug)]
 #[allow(clippy::struct_excessive_bools)]
@@ -93,6 +94,10 @@ struct Cli {
     #[arg(long = "no-preview")]
     no_preview: bool,
 
+    /// Preview update rate in frames per second (0 = update on every line)
+    #[arg(long = "fps", default_value_t = 30)]
+    fps: u32,
+
     /// Sort by field N (1-indexed)
     #[arg(short = 'k', long = "key", value_parser = parse_key_field)]
     key: Option<usize>,
@@ -151,7 +156,11 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     let mut stderr = stderr();
     let mut guard: Option<AlternateScreenGuard> = None;
 
+    let render_interval =
+        (args.fps > 0).then(|| Duration::from_micros(1_000_000 / u64::from(args.fps)));
+
     let mut line_buffer = String::new();
+    let mut last_render: Option<Instant> = None;
 
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']);
@@ -210,16 +219,30 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             }
 
             if !args.no_preview {
-                // Redraw from top: upstream stderr output is wiped on the next redraw
-                execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-                for (_, line) in &sorted_lines {
-                    writeln!(stderr, "{line}")?;
+                let should_render = render_interval
+                    .is_none_or(|interval| last_render.is_none_or(|t| t.elapsed() >= interval));
+                if should_render {
+                    // Redraw from top: upstream stderr output is wiped on the next redraw
+                    execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+                    for (_, line) in &sorted_lines {
+                        writeln!(stderr, "{line}")?;
+                    }
+                    stderr.flush()?;
+                    last_render = Some(Instant::now());
                 }
-                stderr.flush()?;
             }
         }
 
         line_buffer.clear();
+    }
+
+    // Final render to ensure the complete sorted result is visible before leaving
+    if !args.no_preview && guard.is_some() {
+        execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+        for (_, line) in &sorted_lines {
+            writeln!(stderr, "{line}")?;
+        }
+        stderr.flush()?;
     }
 
     Ok(sorted_lines.into_iter().map(|(_, line)| line).collect())
