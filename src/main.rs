@@ -95,8 +95,8 @@ struct Cli {
     no_preview: bool,
 
     /// Preview update rate in frames per second (0 = update on every line)
-    #[arg(long = "fps", default_value_t = 30)]
-    fps: u32,
+    #[arg(long = "fps", default_value_t = 30.0)]
+    fps: f64,
 
     /// Sort by field N (1-indexed)
     #[arg(short = 'k', long = "key", value_parser = parse_key_field)]
@@ -156,8 +156,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     let mut stderr = stderr();
     let mut guard: Option<AlternateScreenGuard> = None;
 
-    let render_interval =
-        (args.fps > 0).then(|| Duration::from_micros(1_000_000 / u64::from(args.fps)));
+    let render_interval = (args.fps > 0.0).then(|| Duration::from_secs_f64(1.0 / args.fps));
 
     let mut line_buffer = String::new();
     let mut last_render: Option<Instant> = None;

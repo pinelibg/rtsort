@@ -119,6 +119,9 @@ printf 'pear\napple\nbanana\n' | rtsort --no-preview
 # Limit preview to 10 fps (useful on slow terminals)
 printf 'pear\napple\nbanana\n' | rtsort --fps 10
 
+# Slow preview for very long-running streams
+printf 'pear\napple\nbanana\n' | rtsort --fps 0.5
+
 # Update preview on every line (no rate limiting)
 printf 'pear\napple\nbanana\n' | rtsort --fps 0
 ```
