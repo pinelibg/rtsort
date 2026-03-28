@@ -136,8 +136,11 @@ struct AlternateScreenGuard;
 
 impl AlternateScreenGuard {
     fn new() -> io::Result<Self> {
-        execute!(stderr(), EnterAlternateScreen)?;
         IN_ALTERNATE_SCREEN.store(true, AtomicOrdering::SeqCst);
+        if let Err(e) = execute!(stderr(), EnterAlternateScreen) {
+            IN_ALTERNATE_SCREEN.store(false, AtomicOrdering::SeqCst);
+            return Err(e);
+        }
         Ok(Self)
     }
 }
@@ -262,7 +265,7 @@ fn main() -> io::Result<()> {
         }
         std::process::exit(130);
     })
-    .expect("Error setting Ctrl-C handler");
+    .map_err(|e| io::Error::other(format!("Error setting Ctrl-C handler: {e}")))?;
 
     let sorted_lines = run_sort_loop(&args)?;
 
