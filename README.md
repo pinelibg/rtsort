@@ -15,6 +15,7 @@ A real-time `sort` with a live terminal preview.
 - Limit output to the top or bottom N results
 - Deduplicate lines that compare equal under the active sort mode (like `sort -u`)
 - `--no-preview` mode for scripting without the live terminal display
+- Configurable preview update rate via `--fps`
 - Sort by a specific field with a configurable field delimiter
 
 ## Install
@@ -64,6 +65,7 @@ Options:
       --top <N>               Output only the first N lines of the sorted result
       --bottom <N>            Output only the last N lines of the sorted result
       --no-preview            Suppress the live terminal preview (no alternate screen)
+      --fps <N>               Preview update rate in frames per second (default: 30; 0 = every line)
   -k, --key <N>               Sort by field N (1-indexed)
   -t, --field-separator <CHAR> Field delimiter character (used with -k; default: whitespace)
       --help                  Print help
@@ -113,6 +115,15 @@ du -sh */ | rtsort -hr --top 5
 
 # Sort without live terminal preview (useful in scripts)
 printf 'pear\napple\nbanana\n' | rtsort --no-preview
+
+# Limit preview to 10 fps (useful on slow terminals)
+printf 'pear\napple\nbanana\n' | rtsort --fps 10
+
+# Slow preview for very long-running streams
+printf 'pear\napple\nbanana\n' | rtsort --fps 0.5
+
+# Update preview on every line (no rate limiting)
+printf 'pear\napple\nbanana\n' | rtsort --fps 0
 ```
 
 ## Development
