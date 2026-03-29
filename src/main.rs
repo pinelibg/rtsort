@@ -147,8 +147,8 @@ impl AlternateScreenGuard {
 
 impl Drop for AlternateScreenGuard {
     fn drop(&mut self) {
-        IN_ALTERNATE_SCREEN.store(false, AtomicOrdering::SeqCst);
         let _ = execute!(stderr(), LeaveAlternateScreen);
+        IN_ALTERNATE_SCREEN.store(false, AtomicOrdering::SeqCst);
     }
 }
 
