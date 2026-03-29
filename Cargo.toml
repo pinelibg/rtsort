@@ -13,6 +13,7 @@ exclude = [".github/", "AGENTS.md", "CLAUDE.md", "hk.pkl", "mise.toml", "renovat
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
 crossterm = "0.29.0"
+ctrlc = "3.5.2"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
