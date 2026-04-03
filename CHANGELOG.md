@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.0](https://github.com/pinelibg/rtsort/compare/v0.5.0...v0.6.0) (2026-03-30)
+
+
+### Features
+
+* add --no-preview to suppress live terminal display ([#42](https://github.com/pinelibg/rtsort/issues/42)) ([49c6ca6](https://github.com/pinelibg/rtsort/commit/49c6ca6f5c4f794306eac43c4e0b9e681b169276))
+* add -k/--key and -t/--field-separator; remove -t short alias from --top ([#44](https://github.com/pinelibg/rtsort/issues/44)) ([ffc73c7](https://github.com/pinelibg/rtsort/commit/ffc73c74b4af2faa3cf778ee6e549f1956b3aa56))
+* add -u/--unique flag to remove duplicate lines ([#41](https://github.com/pinelibg/rtsort/issues/41)) ([b54a866](https://github.com/pinelibg/rtsort/commit/b54a8667d536e39acd9e2bab90ac8510b5eebe8a))
+* add -V/--version-sort ([#43](https://github.com/pinelibg/rtsort/issues/43)) ([ae6ba90](https://github.com/pinelibg/rtsort/commit/ae6ba903a36aacf3b6697184b206ed0fb974f4b2))
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([#54](https://github.com/pinelibg/rtsort/issues/54)) ([bfd7abf](https://github.com/pinelibg/rtsort/commit/bfd7abf897adfecfcdac4a5149c205e9b725e79e))
+* **main:** restore terminal on Ctrl-C via SIGINT handler ([#51](https://github.com/pinelibg/rtsort/issues/51)) ([9ff421c](https://github.com/pinelibg/rtsort/commit/9ff421c93afc27706ea2fbdebb523d74185e2d2f))
+
+
+### Performance Improvements
+
+* **main:** add --fps flag to control preview update rate ([#52](https://github.com/pinelibg/rtsort/issues/52)) ([3f5e353](https://github.com/pinelibg/rtsort/commit/3f5e35308566a1a169956515630b0fa42ff0a7e3))
+* **main:** cache extracted sort keys to avoid redundant computation ([#48](https://github.com/pinelibg/rtsort/issues/48)) ([30a34b5](https://github.com/pinelibg/rtsort/commit/30a34b5139695bb96d9d28b0590dd60bc70bc329))
+
 ## [0.5.0](https://github.com/pinelibg/rtsort/compare/v0.4.3...v0.5.0) (2026-03-22)
 
 
