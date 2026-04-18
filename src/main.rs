@@ -179,22 +179,33 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
-        let search_result = sorted_lines.make_contiguous().binary_search_by(|e| {
-            let key_e = match &e.0 {
-                Some(k) => k,
-                None => &e.1,
-            };
-            let key_line = match &cached_key {
-                Some(k) => k,
-                None => original_line,
-            };
-
-            let ord = match cmp_fn(key_e, key_line) {
-                Ordering::Equal => comparator::compare_normal(&e.1, original_line),
-                other => other,
-            };
-            if args.reverse { ord.reverse() } else { ord }
-        });
+        let search_result = {
+            let (mut lo, mut hi) = (0usize, sorted_lines.len());
+            loop {
+                if lo >= hi {
+                    break Err(lo);
+                }
+                let mid = lo + (hi - lo) / 2;
+                let e = sorted_lines.get(mid).unwrap();
+                let key_e = match &e.0 {
+                    Some(k) => k.as_str(),
+                    None => e.1.as_str(),
+                };
+                let key_line = match cached_key {
+                    Some(k) => k,
+                    None => original_line,
+                };
+                let ord = match cmp_fn(key_e, key_line) {
+                    Ordering::Equal => comparator::compare_normal(&e.1, original_line),
+                    other => other,
+                };
+                match if args.reverse { ord.reverse() } else { ord } {
+                    Ordering::Less => lo = mid + 1,
+                    Ordering::Greater => hi = mid,
+                    Ordering::Equal => break Ok(mid),
+                }
+            }
+        };
 
         // When unique is enabled, Ok(_) means a truly equal line (same key and same content)
         // already exists — skip insertion.
