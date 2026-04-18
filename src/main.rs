@@ -6,6 +6,7 @@ use crossterm::{
 };
 use rtsort::{comparator, extract_key_field};
 use std::cmp::Ordering;
+use std::collections::VecDeque;
 use std::io::{self, BufRead, Write, stderr};
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
@@ -151,7 +152,7 @@ impl Drop for AlternateScreenGuard {
 }
 
 fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
-    let mut sorted_lines: Vec<(Option<String>, String)> = Vec::new();
+    let mut sorted_lines: VecDeque<(Option<String>, String)> = VecDeque::new();
 
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
 
@@ -178,7 +179,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
-        let search_result = sorted_lines.binary_search_by(|e| {
+        let search_result = sorted_lines.make_contiguous().binary_search_by(|e| {
             let key_e = match &e.0 {
                 Some(k) => k,
                 None => &e.1,
@@ -220,7 +221,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
             if let Some(n) = args.bottom
                 && sorted_lines.len() > n
             {
-                sorted_lines.remove(0);
+                sorted_lines.pop_front();
             }
 
             if !args.no_preview {
