@@ -7,6 +7,7 @@ use crossterm::{
 use rtsort::{comparator, extract_key_field};
 use std::cmp::Ordering;
 use std::io::{self, BufRead, Write, stderr};
+use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
 use std::time::{Duration, Instant};
 
@@ -101,7 +102,7 @@ struct Cli {
 
     /// Sort by field N (1-indexed)
     #[arg(short = 'k', long = "key", value_parser = parse_key_field)]
-    key: Option<usize>,
+    key: Option<NonZeroUsize>,
 
     /// Field delimiter character (used with -k; default: whitespace)
     #[arg(short = 't', long = "field-separator", requires = "key")]
@@ -120,14 +121,11 @@ struct Cli {
     version: Option<bool>,
 }
 
-fn parse_key_field(s: &str) -> Result<usize, String> {
+fn parse_key_field(s: &str) -> Result<NonZeroUsize, String> {
     let n: usize = s
         .parse()
         .map_err(|_| format!("`{s}` is not a valid field number"))?;
-    if n == 0 {
-        return Err("field number must be 1 or greater".to_string());
-    }
-    Ok(n)
+    NonZeroUsize::new(n).ok_or_else(|| "field number must be 1 or greater".to_string())
 }
 
 static IN_ALTERNATE_SCREEN: AtomicBool = AtomicBool::new(false);
@@ -259,9 +257,8 @@ fn main() -> io::Result<()> {
     let args = Cli::parse();
 
     ctrlc::set_handler(|| {
-        let mut stderr = stderr().lock();
         if IN_ALTERNATE_SCREEN.load(AtomicOrdering::SeqCst) {
-            let _ = execute!(stderr, LeaveAlternateScreen);
+            let _ = execute!(stderr(), LeaveAlternateScreen);
         }
         std::process::exit(130);
     })
