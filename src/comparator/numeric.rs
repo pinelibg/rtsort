@@ -11,29 +11,23 @@ const EB: f64 = PB * 1024.0;
 /// `(value, rest)` where `rest` is the unparsed remainder. Returns `None`
 /// if the string does not begin with a valid number.
 fn parse_numeric_prefix(s: &str) -> Option<(f64, &str)> {
-    if s.is_empty() {
+    let after_sign = s
+        .strip_prefix('-')
+        .or_else(|| s.strip_prefix('+'))
+        .unwrap_or(s);
+
+    // Count how many bytes form the digit/dot run after the sign.
+    let digit_len = after_sign
+        .bytes()
+        .take_while(|&b| b.is_ascii_digit() || b == b'.')
+        .count();
+
+    // Reject empty strings and sign-only strings.
+    if digit_len == 0 {
         return None;
     }
 
-    // Find the end of the numeric part (sign only valid at position 0)
-    let mut num_end = 0;
-    for (i, c) in s.char_indices() {
-        if c.is_ascii_digit() || c == '.' || (i == 0 && (c == '-' || c == '+')) {
-            num_end = i + c.len_utf8();
-        } else {
-            break;
-        }
-    }
-
-    if num_end == 0 {
-        return None;
-    }
-
-    // Handle corner case where the matched string is just a sign
-    if num_end == 1 && (s.starts_with('-') || s.starts_with('+')) {
-        return None;
-    }
-
+    let num_end = (s.len() - after_sign.len()) + digit_len;
     let value: f64 = s[..num_end].parse().ok()?;
     Some((value, &s[num_end..]))
 }
