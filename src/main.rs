@@ -227,9 +227,10 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
                 let should_render = render_interval
                     .is_none_or(|interval| last_render.is_none_or(|t| t.elapsed() >= interval));
                 if should_render {
+                    let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
                     // Redraw from top: upstream stderr output is wiped on the next redraw
                     execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-                    for (_, line) in &sorted_lines {
+                    for (_, line) in sorted_lines.iter().take(rows) {
                         writeln!(stderr, "{line}")?;
                     }
                     stderr.flush()?;
@@ -243,8 +244,9 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
 
     // Final render to ensure the complete sorted result is visible before leaving
     if !args.no_preview && guard.is_some() {
+        let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
         execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-        for (_, line) in &sorted_lines {
+        for (_, line) in sorted_lines.iter().take(rows) {
             writeln!(stderr, "{line}")?;
         }
         stderr.flush()?;
