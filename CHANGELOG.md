@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.1](https://github.com/pinelibg/rtsort/compare/v0.6.0...v0.6.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([#56](https://github.com/pinelibg/rtsort/issues/56)) ([3d2cd1d](https://github.com/pinelibg/rtsort/commit/3d2cd1dbe0c33af322ac593426431fb6ede29097))
+* **deps:** lock file maintenance ([#69](https://github.com/pinelibg/rtsort/issues/69)) ([b83a776](https://github.com/pinelibg/rtsort/commit/b83a776a02d0934deea2e859fac392d1c86bcd40))
+* **deps:** lock file maintenance ([#71](https://github.com/pinelibg/rtsort/issues/71)) ([edae220](https://github.com/pinelibg/rtsort/commit/edae2204435868d38670ec828e73fa9252053f17))
+* **deps:** lock file maintenance ([#73](https://github.com/pinelibg/rtsort/issues/73)) ([604cc22](https://github.com/pinelibg/rtsort/commit/604cc224524761cdd32589fc1f3f9afc63308f73))
+* **deps:** lock file maintenance ([#74](https://github.com/pinelibg/rtsort/issues/74)) ([08b2eed](https://github.com/pinelibg/rtsort/commit/08b2eed7bbe31def9ba7a583866a730a0f66d05b))
+* **deps:** lock file maintenance ([#75](https://github.com/pinelibg/rtsort/issues/75)) ([b1a5b66](https://github.com/pinelibg/rtsort/commit/b1a5b664b4ee330807125057263b357d15b46c5f))
+* **deps:** lock file maintenance ([#77](https://github.com/pinelibg/rtsort/issues/77)) ([ebdfeb2](https://github.com/pinelibg/rtsort/commit/ebdfeb210350c5020ae965fa11893af3fc79b1c4))
+* **deps:** lock file maintenance ([#80](https://github.com/pinelibg/rtsort/issues/80)) ([55bd587](https://github.com/pinelibg/rtsort/commit/55bd587ff2a879b1fde0e71859b128c4017f3c98))
+* **deps:** lock file maintenance ([#81](https://github.com/pinelibg/rtsort/issues/81)) ([832090e](https://github.com/pinelibg/rtsort/commit/832090ebdf3b5a0fa9113b35639c03db70cf6eb9))
+* **deps:** lock file maintenance ([#85](https://github.com/pinelibg/rtsort/issues/85)) ([846f304](https://github.com/pinelibg/rtsort/commit/846f3042ce10fb63265926f8982529bb72770b6a))
+
+
+### Performance Improvements
+
+* **main:** replace Vec::remove(0) with VecDeque::pop_front in --bottom mode ([#67](https://github.com/pinelibg/rtsort/issues/67)) ([2ae514a](https://github.com/pinelibg/rtsort/commit/2ae514a98bfdc06c5315ccb8346d6277e4edad5b))
+
 ## [0.6.0](https://github.com/pinelibg/rtsort/compare/v0.5.0...v0.6.0) (2026-03-30)
 
 
