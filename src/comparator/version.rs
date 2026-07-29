@@ -2,14 +2,13 @@ use std::cmp::Ordering;
 
 struct VersionSegments<'a> {
     remaining: &'a str,
-    done: bool,
 }
 
 impl<'a> Iterator for VersionSegments<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<&'a str> {
-        if self.done || self.remaining.is_empty() {
+        if self.remaining.is_empty() {
             return None;
         }
 
@@ -32,8 +31,17 @@ fn version_segments(s: &str) -> impl Iterator<Item = &str> {
     let stripped = s.strip_prefix(['v', 'V']).unwrap_or(s);
     VersionSegments {
         remaining: stripped,
-        done: stripped.is_empty(),
     }
+}
+
+/// Compares two ASCII digit segments numerically without parsing them,
+/// so arbitrarily long digit runs (beyond `u64` range) are handled correctly.
+/// After stripping leading zeros, a longer run is a larger number; equal-length
+/// runs compare lexicographically (which matches numeric order for digits).
+fn compare_digit_segments(a: &str, b: &str) -> Ordering {
+    let a = a.trim_start_matches('0');
+    let b = b.trim_start_matches('0');
+    a.len().cmp(&b.len()).then_with(|| a.cmp(b))
 }
 
 /// Comparison function for version sort (GNU `sort -V` compatible).
@@ -57,9 +65,7 @@ pub fn compare_version(a: &str, b: &str) -> Ordering {
                 let right_digits = seg_right.as_bytes().first().is_some_and(u8::is_ascii_digit);
 
                 let ord = if left_digits && right_digits {
-                    let num_left: u64 = seg_left.parse().unwrap_or(0);
-                    let num_right: u64 = seg_right.parse().unwrap_or(0);
-                    num_left.cmp(&num_right)
+                    compare_digit_segments(seg_left, seg_right)
                 } else {
                     seg_left.cmp(seg_right)
                 };
@@ -107,5 +113,18 @@ mod tests {
         assert_eq!(compare_version("v1.0", "v1.9"), Ordering::Less);
         assert_eq!(compare_version("v1.9", "v1.10"), Ordering::Less);
         assert_eq!(compare_version("v1.10", "v2.0"), Ordering::Less);
+    }
+
+    #[test]
+    fn test_compare_version_beyond_u64() {
+        // Digit runs longer than u64::MAX (~1.8e19) must still compare numerically
+        let big = "1.99999999999999999999999";
+        let bigger = "1.100000000000000000000000";
+        assert_eq!(compare_version(big, bigger), Ordering::Less);
+        assert_eq!(compare_version(bigger, big), Ordering::Greater);
+        assert_eq!(
+            compare_version("1.99999999999999999999999", "1.2"),
+            Ordering::Greater
+        );
     }
 }

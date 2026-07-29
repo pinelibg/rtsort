@@ -33,6 +33,7 @@ struct SortModeArgs {
     version_sort: bool,
 }
 
+#[derive(Clone, Copy)]
 enum SortMode {
     Normal,
     Numeric,
@@ -58,7 +59,7 @@ impl From<&SortModeArgs> for SortMode {
 }
 
 impl SortMode {
-    fn comparator(&self) -> fn(&str, &str) -> Ordering {
+    fn comparator(self) -> fn(&str, &str) -> Ordering {
         match self {
             Self::HumanNumeric => comparator::compare_human_numeric,
             Self::Numeric => comparator::compare_numeric,
@@ -98,7 +99,7 @@ struct Cli {
     no_preview: bool,
 
     /// Preview update rate in frames per second (0 = update on every line)
-    #[arg(long = "fps", default_value_t = 30.0)]
+    #[arg(long = "fps", default_value_t = 30.0, value_parser = parse_fps)]
     fps: f64,
 
     /// Sort by field N (1-indexed)
@@ -129,6 +130,17 @@ fn parse_key_field(s: &str) -> Result<NonZeroUsize, String> {
     NonZeroUsize::new(n).ok_or_else(|| "field number must be 1 or greater".to_string())
 }
 
+fn parse_fps(s: &str) -> Result<f64, String> {
+    let fps: f64 = s
+        .parse()
+        .map_err(|_| format!("`{s}` is not a valid number"))?;
+    if fps.is_finite() && fps >= 0.0 {
+        Ok(fps)
+    } else {
+        Err("fps must be a non-negative finite number".to_string())
+    }
+}
+
 static IN_ALTERNATE_SCREEN: AtomicBool = AtomicBool::new(false);
 
 struct AlternateScreenGuard;
@@ -151,8 +163,37 @@ impl Drop for AlternateScreenGuard {
     }
 }
 
+/// A sorted line paired with its optional pre-extracted sort key (`-k`).
+struct Entry {
+    key: Option<String>,
+    line: String,
+}
+
+impl Entry {
+    fn key(&self) -> &str {
+        self.key.as_deref().unwrap_or(&self.line)
+    }
+}
+
+/// Redraws the preview on the alternate screen, capped to the terminal height.
+/// Redraws from the top: upstream stderr output is wiped on the next redraw.
+fn render_preview(stderr: &mut io::Stderr, sorted_lines: &VecDeque<Entry>) -> io::Result<()> {
+    let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
+    execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+    // The last visible line is written without a newline to avoid scrolling
+    let mut preview = sorted_lines.iter().take(rows).peekable();
+    while let Some(entry) = preview.next() {
+        if preview.peek().is_some() {
+            writeln!(stderr, "{}", entry.line)?;
+        } else {
+            write!(stderr, "{}", entry.line)?;
+        }
+    }
+    stderr.flush()
+}
+
 fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
-    let mut sorted_lines: VecDeque<(Option<String>, String)> = VecDeque::new();
+    let mut sorted_lines: VecDeque<Entry> = VecDeque::new();
 
     let cmp_fn = SortMode::from(&args.sort_mode).comparator();
 
@@ -180,16 +221,9 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
         }
 
         let search_result = sorted_lines.binary_search_by(|e| {
-            let key_e = match &e.0 {
-                Some(k) => k.as_str(),
-                None => e.1.as_str(),
-            };
-            let key_line = match cached_key {
-                Some(k) => k,
-                None => original_line,
-            };
-            let ord = match cmp_fn(key_e, key_line) {
-                Ordering::Equal => comparator::compare_normal(&e.1, original_line),
+            let key_line = cached_key.unwrap_or(original_line);
+            let ord = match cmp_fn(e.key(), key_line) {
+                Ordering::Equal => comparator::compare_normal(&e.line, original_line),
                 other => other,
             };
             if args.reverse { ord.reverse() } else { ord }
@@ -212,7 +246,10 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
         {
             sorted_lines.insert(
                 pos,
-                (cached_key.map(String::from), original_line.to_string()),
+                Entry {
+                    key: cached_key.map(String::from),
+                    line: original_line.to_string(),
+                },
             );
             if let Some(n) = args.top {
                 sorted_lines.truncate(n);
@@ -227,18 +264,7 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
                 let should_render = render_interval
                     .is_none_or(|interval| last_render.is_none_or(|t| t.elapsed() >= interval));
                 if should_render {
-                    let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
-                    // Redraw from top: upstream stderr output is wiped on the next redraw
-                    execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-                    let mut preview = sorted_lines.iter().take(rows).peekable();
-                    while let Some((_, line)) = preview.next() {
-                        if preview.peek().is_some() {
-                            writeln!(stderr, "{line}")?;
-                        } else {
-                            write!(stderr, "{line}")?;
-                        }
-                    }
-                    stderr.flush()?;
+                    render_preview(&mut stderr, &sorted_lines)?;
                     last_render = Some(Instant::now());
                 }
             }
@@ -249,20 +275,10 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
 
     // Final render to refresh the preview and keep it within terminal height before leaving
     if !args.no_preview && guard.is_some() {
-        let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
-        execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
-        let mut preview = sorted_lines.iter().take(rows).peekable();
-        while let Some((_, line)) = preview.next() {
-            if preview.peek().is_some() {
-                writeln!(stderr, "{line}")?;
-            } else {
-                write!(stderr, "{line}")?;
-            }
-        }
-        stderr.flush()?;
+        render_preview(&mut stderr, &sorted_lines)?;
     }
 
-    Ok(sorted_lines.into_iter().map(|(_, line)| line).collect())
+    Ok(sorted_lines.into_iter().map(|e| e.line).collect())
 }
 
 fn main() -> io::Result<()> {

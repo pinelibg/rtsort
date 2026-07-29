@@ -416,6 +416,47 @@ mod help {
     }
 }
 
+mod fps_validation {
+    use super::*;
+
+    #[test]
+    fn negative_fps_is_rejected() {
+        cmd()
+            .args(["--fps", "-1"])
+            .write_stdin("a\n")
+            .assert()
+            .failure();
+    }
+
+    #[test]
+    fn non_numeric_fps_is_rejected() {
+        cmd()
+            .args(["--fps", "abc"])
+            .write_stdin("a\n")
+            .assert()
+            .failure();
+    }
+
+    #[test]
+    fn nan_fps_is_rejected() {
+        cmd()
+            .args(["--fps", "NaN"])
+            .write_stdin("a\n")
+            .assert()
+            .failure();
+    }
+
+    #[test]
+    fn zero_fps_is_accepted() {
+        cmd()
+            .args(["--fps", "0"])
+            .write_stdin("b\na\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::diff("a\nb\n"));
+    }
+}
+
 mod line_endings {
     use super::*;
 

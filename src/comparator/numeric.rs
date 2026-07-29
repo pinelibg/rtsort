@@ -48,14 +48,11 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
     let rest_trimmed = rest.trim_start();
 
     // Suffix typically consists of alphabetic characters (like K, M, G, KiB, etc)
-    let mut suffix_end = 0;
-    for (i, c) in rest_trimmed.char_indices() {
-        if c.is_alphabetic() {
-            suffix_end = i + c.len_utf8();
-        } else {
-            break;
-        }
-    }
+    let suffix_end: usize = rest_trimmed
+        .chars()
+        .take_while(|c| c.is_alphabetic())
+        .map(char::len_utf8)
+        .sum();
 
     let suffix_part = &rest_trimmed[..suffix_end];
 
@@ -83,13 +80,11 @@ pub fn parse_human_numeric(s: &str) -> Option<f64> {
     Some(value * multiplier)
 }
 
-/// Comparison function for numeric sort (leading number only, suffix ignored)
-#[must_use]
-pub fn compare_numeric(a: &str, b: &str) -> Ordering {
-    let num_a = parse_numeric(a);
-    let num_b = parse_numeric(b);
-
-    match (num_a, num_b) {
+/// Compares two strings by their parsed numeric values.
+/// Non-numbers sort before numbers (matching GNU `sort -n`/`-h` behavior);
+/// ties and unparseable pairs fall back to string comparison.
+fn compare_parsed(a: &str, b: &str, parse: fn(&str) -> Option<f64>) -> Ordering {
+    match (parse(a), parse(b)) {
         (Some(va), Some(vb)) => va.partial_cmp(&vb).unwrap_or_else(|| a.cmp(b)),
         (Some(_), None) => Ordering::Greater,
         (None, Some(_)) => Ordering::Less,
@@ -97,21 +92,16 @@ pub fn compare_numeric(a: &str, b: &str) -> Ordering {
     }
 }
 
+/// Comparison function for numeric sort (leading number only, suffix ignored)
+#[must_use]
+pub fn compare_numeric(a: &str, b: &str) -> Ordering {
+    compare_parsed(a, b, parse_numeric)
+}
+
 /// Comparison function for human-numeric sort
 #[must_use]
 pub fn compare_human_numeric(a: &str, b: &str) -> Ordering {
-    let num_a = parse_human_numeric(a);
-    let num_b = parse_human_numeric(b);
-
-    match (num_a, num_b) {
-        (Some(va), Some(vb)) => {
-            // Compare as f64. If they are exactly equal (or NaN), fallback to string comparison
-            va.partial_cmp(&vb).unwrap_or_else(|| a.cmp(b))
-        }
-        (Some(_), None) => Ordering::Greater, // Non-numbers sort before numbers (matching `sort -h` behavior)
-        (None, Some(_)) => Ordering::Less,
-        (None, None) => a.cmp(b), // Both are not numbers, fallback to string sort
-    }
+    compare_parsed(a, b, parse_human_numeric)
 }
 
 #[cfg(test)]
