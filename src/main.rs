@@ -4,9 +4,8 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rtsort::{comparator, extract_key_field};
+use rtsort::{SortPolicy, SortedBuffer, comparator};
 use std::cmp::Ordering;
-use std::collections::VecDeque;
 use std::io::{self, BufRead, Write, stderr};
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
@@ -163,39 +162,33 @@ impl Drop for AlternateScreenGuard {
     }
 }
 
-/// A sorted line paired with its optional pre-extracted sort key (`-k`).
-struct Entry {
-    key: Option<String>,
-    line: String,
-}
-
-impl Entry {
-    fn key(&self) -> &str {
-        self.key.as_deref().unwrap_or(&self.line)
-    }
-}
-
 /// Redraws the preview on the alternate screen, capped to the terminal height.
 /// Redraws from the top: upstream stderr output is wiped on the next redraw.
-fn render_preview(stderr: &mut io::Stderr, sorted_lines: &VecDeque<Entry>) -> io::Result<()> {
+fn render_preview(stderr: &mut io::Stderr, buffer: &SortedBuffer) -> io::Result<()> {
     let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
     execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
     // The last visible line is written without a newline to avoid scrolling
-    let mut preview = sorted_lines.iter().take(rows).peekable();
-    while let Some(entry) = preview.next() {
+    let mut preview = buffer.lines().take(rows).peekable();
+    while let Some(line) = preview.next() {
         if preview.peek().is_some() {
-            writeln!(stderr, "{}", entry.line)?;
+            writeln!(stderr, "{line}")?;
         } else {
-            write!(stderr, "{}", entry.line)?;
+            write!(stderr, "{line}")?;
         }
     }
     stderr.flush()
 }
 
 fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
-    let mut sorted_lines: VecDeque<Entry> = VecDeque::new();
-
-    let cmp_fn = SortMode::from(&args.sort_mode).comparator();
+    let mut buffer = SortedBuffer::new(SortPolicy {
+        cmp_fn: SortMode::from(&args.sort_mode).comparator(),
+        reverse: args.reverse,
+        unique: args.unique,
+        top: args.top,
+        bottom: args.bottom,
+        key_field: args.key,
+        field_sep: args.field_sep,
+    });
 
     let stdin = io::stdin();
     let mut handle = stdin.lock();
@@ -212,61 +205,16 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
     while handle.read_line(&mut line_buffer)? > 0 {
         let original_line = line_buffer.trim_end_matches(['\n', '\r']);
 
-        let cached_key = args
-            .key
-            .map(|n| extract_key_field(original_line, n, args.field_sep));
-
         if !args.no_preview && guard.is_none() {
             guard = Some(AlternateScreenGuard::new()?);
         }
 
-        let search_result = sorted_lines.binary_search_by(|e| {
-            let key_line = cached_key.unwrap_or(original_line);
-            let ord = match cmp_fn(e.key(), key_line) {
-                Ordering::Equal => comparator::compare_normal(&e.line, original_line),
-                other => other,
-            };
-            if args.reverse { ord.reverse() } else { ord }
-        });
-
-        // When unique is enabled, Ok(_) means a truly equal line (same key and same content)
-        // already exists — skip insertion.
-        let pos = match search_result {
-            Ok(_) if args.unique => {
-                line_buffer.clear();
-                continue;
-            }
-            Ok(pos) | Err(pos) => pos,
-        };
-
-        if args.top.is_none_or(|n| sorted_lines.len() < n || pos < n)
-            && args
-                .bottom
-                .is_none_or(|n| sorted_lines.len() < n || pos > sorted_lines.len() - n)
-        {
-            sorted_lines.insert(
-                pos,
-                Entry {
-                    key: cached_key.map(String::from),
-                    line: original_line.to_string(),
-                },
-            );
-            if let Some(n) = args.top {
-                sorted_lines.truncate(n);
-            }
-            if let Some(n) = args.bottom
-                && sorted_lines.len() > n
-            {
-                sorted_lines.pop_front();
-            }
-
-            if !args.no_preview {
-                let should_render = render_interval
-                    .is_none_or(|interval| last_render.is_none_or(|t| t.elapsed() >= interval));
-                if should_render {
-                    render_preview(&mut stderr, &sorted_lines)?;
-                    last_render = Some(Instant::now());
-                }
+        if buffer.insert(original_line) && !args.no_preview {
+            let should_render = render_interval
+                .is_none_or(|interval| last_render.is_none_or(|t| t.elapsed() >= interval));
+            if should_render {
+                render_preview(&mut stderr, &buffer)?;
+                last_render = Some(Instant::now());
             }
         }
 
@@ -275,10 +223,10 @@ fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
 
     // Final render to refresh the preview and keep it within terminal height before leaving
     if !args.no_preview && guard.is_some() {
-        render_preview(&mut stderr, &sorted_lines)?;
+        render_preview(&mut stderr, &buffer)?;
     }
 
-    Ok(sorted_lines.into_iter().map(|e| e.line).collect())
+    Ok(buffer.into_lines())
 }
 
 fn main() -> io::Result<()> {
