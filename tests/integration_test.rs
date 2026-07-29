@@ -6,52 +6,48 @@ fn cmd() -> Command {
     Command::cargo_bin("rtsort").unwrap()
 }
 
+/// Asserts that running rtsort with `args` on `input` succeeds and prints
+/// exactly `expected` on stdout.
+fn assert_sorts(args: &[&str], input: &str, expected: &str) {
+    cmd()
+        .args(args)
+        .write_stdin(input)
+        .assert()
+        .success()
+        .stdout(predicate::str::diff(expected.to_string()));
+}
+
+/// Asserts that running rtsort with `args` on `input` exits with a failure.
+fn assert_fails(args: &[&str], input: &str) {
+    cmd().args(args).write_stdin(input).assert().failure();
+}
+
 mod normal_sort {
     use super::*;
 
     #[test]
     fn basic_alphabetical() {
-        cmd()
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(&[], "banana\napple\ncherry\n", "apple\nbanana\ncherry\n");
     }
 
     #[test]
     fn already_sorted() {
-        cmd()
-            .write_stdin("alpha\nbeta\ngamma\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("alpha\nbeta\ngamma\n"));
+        assert_sorts(&[], "alpha\nbeta\ngamma\n", "alpha\nbeta\ngamma\n");
     }
 
     #[test]
     fn numbers_as_strings() {
-        cmd()
-            .write_stdin("20\n2\n10\n3\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("10\n2\n20\n3\n"));
+        assert_sorts(&[], "20\n2\n10\n3\n", "10\n2\n20\n3\n");
     }
 
     #[test]
     fn mixed_case() {
-        cmd()
-            .write_stdin("banana\nApple\nCherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("Apple\nCherry\nbanana\n"));
+        assert_sorts(&[], "banana\nApple\nCherry\n", "Apple\nCherry\nbanana\n");
     }
 
     #[test]
     fn duplicates_preserved() {
-        cmd()
-            .write_stdin("b\na\nb\na\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a\na\nb\nb\n"));
+        assert_sorts(&[], "b\na\nb\na\n", "a\na\nb\nb\n");
     }
 }
 
@@ -60,32 +56,21 @@ mod reverse_sort {
 
     #[test]
     fn basic_reverse() {
-        cmd()
-            .arg("-r")
-            .write_stdin("apple\ncherry\nbanana\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+        assert_sorts(
+            &["-r"],
+            "apple\ncherry\nbanana\n",
+            "cherry\nbanana\napple\n",
+        );
     }
 
     #[test]
     fn long_flag() {
-        cmd()
-            .arg("--reverse")
-            .write_stdin("a\nc\nb\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("c\nb\na\n"));
+        assert_sorts(&["--reverse"], "a\nc\nb\n", "c\nb\na\n");
     }
 
     #[test]
     fn combined_with_human_numeric() {
-        cmd()
-            .args(["-h", "-r"])
-            .write_stdin("1K\n1G\n1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1G\n1M\n1K\n"));
+        assert_sorts(&["-h", "-r"], "1K\n1G\n1M\n", "1G\n1M\n1K\n");
     }
 }
 
@@ -94,61 +79,32 @@ mod numeric_sort {
 
     #[test]
     fn basic_numeric_order() {
-        cmd()
-            .arg("-n")
-            .write_stdin("20\n2\n10\n3\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("2\n3\n10\n20\n"));
+        assert_sorts(&["-n"], "20\n2\n10\n3\n", "2\n3\n10\n20\n");
     }
 
     #[test]
     fn long_flag() {
-        cmd()
-            .arg("--numeric-sort")
-            .write_stdin("20\n2\n10\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("2\n10\n20\n"));
+        assert_sorts(&["--numeric-sort"], "20\n2\n10\n", "2\n10\n20\n");
     }
 
     #[test]
     fn non_numeric_before_numeric() {
-        cmd()
-            .arg("-n")
-            .write_stdin("10\nfoo\n2\nbar\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("bar\nfoo\n2\n10\n"));
+        assert_sorts(&["-n"], "10\nfoo\n2\nbar\n", "bar\nfoo\n2\n10\n");
     }
 
     #[test]
     fn suffix_ignored() {
-        cmd()
-            .arg("-n")
-            .write_stdin("10K\n2M\n5G\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("2M\n5G\n10K\n"));
+        assert_sorts(&["-n"], "10K\n2M\n5G\n", "2M\n5G\n10K\n");
     }
 
     #[test]
     fn negative_values() {
-        cmd()
-            .arg("-n")
-            .write_stdin("3\n-1\n2\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("-1\n2\n3\n"));
+        assert_sorts(&["-n"], "3\n-1\n2\n", "-1\n2\n3\n");
     }
 
     #[test]
     fn human_numeric_and_numeric_are_mutually_exclusive() {
-        cmd()
-            .args(["-n", "-h"])
-            .write_stdin("1G\n1K\n1M\n")
-            .assert()
-            .failure();
+        assert_fails(&["-n", "-h"], "1G\n1K\n1M\n");
     }
 }
 
@@ -157,94 +113,51 @@ mod human_numeric_sort {
 
     #[test]
     fn basic_size_suffixes() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1G\n1M\n1K\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n1M\n1G\n"));
+        assert_sorts(&["-h"], "1G\n1M\n1K\n", "1K\n1M\n1G\n");
     }
 
     #[test]
     fn same_suffix_different_magnitude() {
-        cmd()
-            .arg("-h")
-            .write_stdin("10K\n2K\n1K\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n2K\n10K\n"));
+        assert_sorts(&["-h"], "10K\n2K\n1K\n", "1K\n2K\n10K\n");
     }
 
     #[test]
     fn fractional_values() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1.5M\n1M\n1023K\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1023K\n1M\n1.5M\n"));
+        assert_sorts(&["-h"], "1.5M\n1M\n1023K\n", "1023K\n1M\n1.5M\n");
     }
 
     #[test]
     fn cross_suffix_boundary() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1025K\n1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1M\n1025K\n"));
+        assert_sorts(&["-h"], "1025K\n1M\n", "1M\n1025K\n");
     }
 
     #[test]
     fn non_numeric_before_numeric() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1K\nfoo\n2K\nbar\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("bar\nfoo\n1K\n2K\n"));
+        assert_sorts(&["-h"], "1K\nfoo\n2K\nbar\n", "bar\nfoo\n1K\n2K\n");
     }
 
     #[test]
     fn du_style_output() {
-        cmd()
-            .arg("-h")
-            .write_stdin("4.0K\t/boot\n0\t/dev\n528K\t/tmp\n12K\t/mnt\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff(
-                "0\t/dev\n4.0K\t/boot\n12K\t/mnt\n528K\t/tmp\n",
-            ));
+        assert_sorts(
+            &["-h"],
+            "4.0K\t/boot\n0\t/dev\n528K\t/tmp\n12K\t/mnt\n",
+            "0\t/dev\n4.0K\t/boot\n12K\t/mnt\n528K\t/tmp\n",
+        );
     }
 
     #[test]
     fn iec_suffixes() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1GiB\n1MiB\n1KiB\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1KiB\n1MiB\n1GiB\n"));
+        assert_sorts(&["-h"], "1GiB\n1MiB\n1KiB\n", "1KiB\n1MiB\n1GiB\n");
     }
 
     #[test]
     fn negative_values() {
-        cmd()
-            .arg("-h")
-            .write_stdin("-1G\n-1K\n-1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("-1G\n-1M\n-1K\n"));
+        assert_sorts(&["-h"], "-1G\n-1K\n-1M\n", "-1G\n-1M\n-1K\n");
     }
 
     #[test]
     fn long_flag() {
-        cmd()
-            .arg("--human-numeric-sort")
-            .write_stdin("1G\n1K\n1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n1M\n1G\n"));
+        assert_sorts(&["--human-numeric-sort"], "1G\n1K\n1M\n", "1K\n1M\n1G\n");
     }
 }
 
@@ -253,38 +166,22 @@ mod edge_cases {
 
     #[test]
     fn empty_input() {
-        cmd()
-            .write_stdin("")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff(""));
+        assert_sorts(&[], "", "");
     }
 
     #[test]
     fn single_line() {
-        cmd()
-            .write_stdin("hello\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("hello\n"));
+        assert_sorts(&[], "hello\n", "hello\n");
     }
 
     #[test]
     fn single_line_no_trailing_newline() {
-        cmd()
-            .write_stdin("hello")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("hello\n"));
+        assert_sorts(&[], "hello", "hello\n");
     }
 
     #[test]
     fn empty_lines_sort_first() {
-        cmd()
-            .write_stdin("b\n\na\n\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("\n\na\nb\n"));
+        assert_sorts(&[], "b\n\na\n\n", "\n\na\nb\n");
     }
 
     #[test]
@@ -297,11 +194,7 @@ mod edge_cases {
         expected.sort();
         let expected = expected.join("\n") + "\n";
 
-        cmd()
-            .write_stdin(input)
-            .assert()
-            .success()
-            .stdout(predicate::str::diff(expected));
+        assert_sorts(&[], &input, &expected);
     }
 }
 
@@ -310,54 +203,41 @@ mod ignore_case_sort {
 
     #[test]
     fn basic_ignore_case() {
-        cmd()
-            .arg("-f")
-            .write_stdin("banana\nApple\nCherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("Apple\nbanana\nCherry\n"));
+        assert_sorts(
+            &["-f"],
+            "banana\nApple\nCherry\n",
+            "Apple\nbanana\nCherry\n",
+        );
     }
 
     #[test]
     fn long_flag() {
-        cmd()
-            .arg("--ignore-case")
-            .write_stdin("banana\nApple\nCherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("Apple\nbanana\nCherry\n"));
+        assert_sorts(
+            &["--ignore-case"],
+            "banana\nApple\nCherry\n",
+            "Apple\nbanana\nCherry\n",
+        );
     }
 
     #[test]
     fn combined_with_reverse() {
-        cmd()
-            .args(["-f", "-r"])
-            .write_stdin("banana\nApple\nCherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("Cherry\nbanana\nApple\n"));
+        assert_sorts(
+            &["-f", "-r"],
+            "banana\nApple\nCherry\n",
+            "Cherry\nbanana\nApple\n",
+        );
     }
 
     #[test]
     fn tiebreak_uppercase_before_lowercase() {
         // When case-insensitively equal, byte order decides: 'A' (65) < 'a' (97)
-        cmd()
-            .arg("-f")
-            .write_stdin("apple\nApple\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("Apple\napple\n"));
+        assert_sorts(&["-f"], "apple\nApple\n", "Apple\napple\n");
     }
 
     #[test]
     fn unicode_uppercase_fold() {
         // "ß".to_uppercase() == "SS" (0x53 0x53) which sorts before "T" (0x54)
-        cmd()
-            .arg("-f")
-            .write_stdin("t\nß\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("ß\nt\n"));
+        assert_sorts(&["-f"], "t\nß\n", "ß\nt\n");
     }
 }
 
@@ -366,22 +246,20 @@ mod version_sort {
 
     #[test]
     fn basic_version_order() {
-        cmd()
-            .arg("-V")
-            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+        assert_sorts(
+            &["-V"],
+            "v1.10\nv1.9\nv2.0\nv1.0\n",
+            "v1.0\nv1.9\nv1.10\nv2.0\n",
+        );
     }
 
     #[test]
     fn long_flag() {
-        cmd()
-            .arg("--version-sort")
-            .write_stdin("v1.10\nv1.9\nv2.0\nv1.0\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("v1.0\nv1.9\nv1.10\nv2.0\n"));
+        assert_sorts(
+            &["--version-sort"],
+            "v1.10\nv1.9\nv2.0\nv1.0\n",
+            "v1.0\nv1.9\nv1.10\nv2.0\n",
+        );
     }
 }
 
@@ -390,20 +268,12 @@ mod sort_mode_conflicts {
 
     #[test]
     fn numeric_and_version_conflicts() {
-        cmd()
-            .args(["-n", "-V"])
-            .write_stdin("1\n2\n")
-            .assert()
-            .failure();
+        assert_fails(&["-n", "-V"], "1\n2\n");
     }
 
     #[test]
     fn human_numeric_and_numeric_conflicts() {
-        cmd()
-            .args(["-h", "-n"])
-            .write_stdin("1\n2\n")
-            .assert()
-            .failure();
+        assert_fails(&["-h", "-n"], "1\n2\n");
     }
 }
 
@@ -421,39 +291,22 @@ mod fps_validation {
 
     #[test]
     fn negative_fps_is_rejected() {
-        cmd()
-            .args(["--fps", "-1"])
-            .write_stdin("a\n")
-            .assert()
-            .failure();
+        assert_fails(&["--fps", "-1"], "a\n");
     }
 
     #[test]
     fn non_numeric_fps_is_rejected() {
-        cmd()
-            .args(["--fps", "abc"])
-            .write_stdin("a\n")
-            .assert()
-            .failure();
+        assert_fails(&["--fps", "abc"], "a\n");
     }
 
     #[test]
     fn nan_fps_is_rejected() {
-        cmd()
-            .args(["--fps", "NaN"])
-            .write_stdin("a\n")
-            .assert()
-            .failure();
+        assert_fails(&["--fps", "NaN"], "a\n");
     }
 
     #[test]
     fn zero_fps_is_accepted() {
-        cmd()
-            .args(["--fps", "0"])
-            .write_stdin("b\na\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a\nb\n"));
+        assert_sorts(&["--fps", "0"], "b\na\n", "a\nb\n");
     }
 }
 
@@ -462,30 +315,21 @@ mod line_endings {
 
     #[test]
     fn crlf_stripped() {
-        cmd()
-            .write_stdin("banana\r\napple\r\ncherry\r\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(
+            &[],
+            "banana\r\napple\r\ncherry\r\n",
+            "apple\nbanana\ncherry\n",
+        );
     }
 
     #[test]
     fn mixed_line_endings() {
-        cmd()
-            .write_stdin("c\r\nb\na\r\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a\nb\nc\n"));
+        assert_sorts(&[], "c\r\nb\na\r\n", "a\nb\nc\n");
     }
 
     #[test]
     fn crlf_with_human_numeric() {
-        cmd()
-            .arg("-h")
-            .write_stdin("1M\r\n1K\r\n1G\r\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n1M\n1G\n"));
+        assert_sorts(&["-h"], "1M\r\n1K\r\n1G\r\n", "1K\n1M\n1G\n");
     }
 }
 
@@ -494,72 +338,50 @@ mod top_output {
 
     #[test]
     fn basic_top() {
-        cmd()
-            .args(["--top", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(
+            &["--top", "3"],
+            "banana\napple\ncherry\ndate\nelderberry\n",
+            "apple\nbanana\ncherry\n",
+        );
     }
 
     #[test]
     fn field_sep_without_key_is_rejected() {
         // -t requires -k; providing -t alone should cause a CLI error
-        cmd()
-            .args(["-t", "3"])
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .failure();
+        assert_fails(&["-t", "3"], "banana\napple\ncherry\n");
     }
 
     #[test]
     fn with_reverse() {
-        cmd()
-            .args(["-r", "--top", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("elderberry\ndate\ncherry\n"));
+        assert_sorts(
+            &["-r", "--top", "3"],
+            "banana\napple\ncherry\ndate\nelderberry\n",
+            "elderberry\ndate\ncherry\n",
+        );
     }
 
     #[test]
     fn with_numeric_sort() {
-        cmd()
-            .args(["-n", "--top", "3"])
-            .write_stdin("10\n2\n30\n5\n20\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("2\n5\n10\n"));
+        assert_sorts(&["-n", "--top", "3"], "10\n2\n30\n5\n20\n", "2\n5\n10\n");
     }
 
     #[test]
     fn with_human_numeric_sort() {
-        cmd()
-            .args(["-h", "--top", "2"])
-            .write_stdin("1G\n1K\n1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1K\n1M\n"));
+        assert_sorts(&["-h", "--top", "2"], "1G\n1K\n1M\n", "1K\n1M\n");
     }
 
     #[test]
     fn n_greater_than_total() {
-        cmd()
-            .args(["--top", "10"])
-            .write_stdin("cherry\napple\nbanana\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(
+            &["--top", "10"],
+            "cherry\napple\nbanana\n",
+            "apple\nbanana\ncherry\n",
+        );
     }
 
     #[test]
     fn n_zero() {
-        cmd()
-            .args(["--top", "0"])
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff(""));
+        assert_sorts(&["--top", "0"], "banana\napple\ncherry\n", "");
     }
 }
 
@@ -568,32 +390,29 @@ mod no_preview {
 
     #[test]
     fn sorts_correctly_without_preview() {
-        cmd()
-            .arg("--no-preview")
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(
+            &["--no-preview"],
+            "banana\napple\ncherry\n",
+            "apple\nbanana\ncherry\n",
+        );
     }
 
     #[test]
     fn combined_with_reverse() {
-        cmd()
-            .args(["--no-preview", "-r"])
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+        assert_sorts(
+            &["--no-preview", "-r"],
+            "banana\napple\ncherry\n",
+            "cherry\nbanana\napple\n",
+        );
     }
 
     #[test]
     fn combined_with_top() {
-        cmd()
-            .args(["--no-preview", "--top", "2"])
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\n"));
+        assert_sorts(
+            &["--no-preview", "--top", "2"],
+            "banana\napple\ncherry\n",
+            "apple\nbanana\n",
+        );
     }
 }
 
@@ -602,52 +421,44 @@ mod key_sort {
 
     #[test]
     fn sort_by_second_field_whitespace() {
-        cmd()
-            .args(["-k", "2"])
-            .write_stdin("banana 2\napple 3\ncherry 1\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry 1\nbanana 2\napple 3\n"));
+        assert_sorts(
+            &["-k", "2"],
+            "banana 2\napple 3\ncherry 1\n",
+            "cherry 1\nbanana 2\napple 3\n",
+        );
     }
 
     #[test]
     fn sort_by_second_field_with_separator() {
-        cmd()
-            .args(["-k", "2", "-t", ":"])
-            .write_stdin("banana:2\napple:3\ncherry:1\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry:1\nbanana:2\napple:3\n"));
+        assert_sorts(
+            &["-k", "2", "-t", ":"],
+            "banana:2\napple:3\ncherry:1\n",
+            "cherry:1\nbanana:2\napple:3\n",
+        );
     }
 
     #[test]
     fn missing_field_sorts_as_empty_string() {
         // Lines with fewer fields than N use empty string as key (sorts first)
-        cmd()
-            .args(["-k", "2"])
-            .write_stdin("banana 2\napple\ncherry 1\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\ncherry 1\nbanana 2\n"));
+        assert_sorts(
+            &["-k", "2"],
+            "banana 2\napple\ncherry 1\n",
+            "apple\ncherry 1\nbanana 2\n",
+        );
     }
 
     #[test]
     fn long_flags() {
-        cmd()
-            .args(["--key", "2", "--field-separator", "|"])
-            .write_stdin("b|z\na|a\nc|m\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a|a\nc|m\nb|z\n"));
+        assert_sorts(
+            &["--key", "2", "--field-separator", "|"],
+            "b|z\na|a\nc|m\n",
+            "a|a\nc|m\nb|z\n",
+        );
     }
 
     #[test]
     fn key_zero_is_rejected() {
-        cmd()
-            .args(["-k", "0"])
-            .write_stdin("a\nb\n")
-            .assert()
-            .failure();
+        assert_fails(&["-k", "0"], "a\nb\n");
     }
 }
 
@@ -656,35 +467,20 @@ mod unique_sort {
 
     #[test]
     fn removes_duplicates() {
-        cmd()
-            .arg("-u")
-            .write_stdin("b\na\nb\na\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a\nb\n"));
+        assert_sorts(&["-u"], "b\na\nb\na\n", "a\nb\n");
     }
 
     #[test]
     fn top_with_interleaved_duplicates() {
         // Without correct fix, dedup after windowed top-2 could yield fewer than 2 unique lines.
         // Input sorted: a a b b c c — top 2 unique should be a, b.
-        cmd()
-            .args(["-u", "--top", "2"])
-            .write_stdin("b\na\nb\nc\na\nc\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("a\nb\n"));
+        assert_sorts(&["-u", "--top", "2"], "b\na\nb\nc\na\nc\n", "a\nb\n");
     }
 
     #[test]
     fn bottom_with_interleaved_duplicates() {
         // Input sorted: a a b b c c — bottom 2 unique should be b, c.
-        cmd()
-            .args(["-u", "--bottom", "2"])
-            .write_stdin("b\na\nb\nc\na\nc\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("b\nc\n"));
+        assert_sorts(&["-u", "--bottom", "2"], "b\na\nb\nc\na\nc\n", "b\nc\n");
     }
 }
 
@@ -693,70 +489,52 @@ mod bottom_output {
 
     #[test]
     fn basic_bottom() {
-        cmd()
-            .args(["--bottom", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry\ndate\nelderberry\n"));
+        assert_sorts(
+            &["--bottom", "3"],
+            "banana\napple\ncherry\ndate\nelderberry\n",
+            "cherry\ndate\nelderberry\n",
+        );
     }
 
     #[test]
     fn with_reverse() {
-        cmd()
-            .args(["-r", "--bottom", "3"])
-            .write_stdin("banana\napple\ncherry\ndate\nelderberry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("cherry\nbanana\napple\n"));
+        assert_sorts(
+            &["-r", "--bottom", "3"],
+            "banana\napple\ncherry\ndate\nelderberry\n",
+            "cherry\nbanana\napple\n",
+        );
     }
 
     #[test]
     fn with_numeric_sort() {
-        cmd()
-            .args(["-n", "--bottom", "3"])
-            .write_stdin("10\n2\n30\n5\n20\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("10\n20\n30\n"));
+        assert_sorts(
+            &["-n", "--bottom", "3"],
+            "10\n2\n30\n5\n20\n",
+            "10\n20\n30\n",
+        );
     }
 
     #[test]
     fn with_human_numeric_sort() {
-        cmd()
-            .args(["-h", "--bottom", "2"])
-            .write_stdin("1G\n1K\n1M\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("1M\n1G\n"));
+        assert_sorts(&["-h", "--bottom", "2"], "1G\n1K\n1M\n", "1M\n1G\n");
     }
 
     #[test]
     fn n_greater_than_total() {
-        cmd()
-            .args(["--bottom", "10"])
-            .write_stdin("cherry\napple\nbanana\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff("apple\nbanana\ncherry\n"));
+        assert_sorts(
+            &["--bottom", "10"],
+            "cherry\napple\nbanana\n",
+            "apple\nbanana\ncherry\n",
+        );
     }
 
     #[test]
     fn n_zero() {
-        cmd()
-            .args(["--bottom", "0"])
-            .write_stdin("banana\napple\ncherry\n")
-            .assert()
-            .success()
-            .stdout(predicate::str::diff(""));
+        assert_sorts(&["--bottom", "0"], "banana\napple\ncherry\n", "");
     }
 
     #[test]
     fn conflicts_with_top() {
-        cmd()
-            .args(["--top", "2", "--bottom", "2"])
-            .write_stdin("banana\napple\n")
-            .assert()
-            .failure();
+        assert_fails(&["--top", "2", "--bottom", "2"], "banana\napple\n");
     }
 }
