@@ -1,7 +1,7 @@
 use clap::{ArgGroup, Args, Parser};
 use crossterm::{
     cursor::MoveTo,
-    execute,
+    execute, queue,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use rtsort::{SortPolicy, SortedBuffer, comparator};
@@ -166,17 +166,20 @@ impl Drop for AlternateScreenGuard {
 /// Redraws from the top: upstream stderr output is wiped on the next redraw.
 fn render_preview(stderr: &mut io::Stderr, buffer: &SortedBuffer) -> io::Result<()> {
     let rows = crossterm::terminal::size().map_or(usize::MAX, |(_, r)| r as usize);
-    execute!(stderr, Clear(ClearType::All), MoveTo(0, 0))?;
+    // Buffer the whole frame so it reaches the terminal in a single write,
+    // instead of one syscall per line
+    let mut frame = io::BufWriter::new(&mut *stderr);
+    queue!(frame, Clear(ClearType::All), MoveTo(0, 0))?;
     // The last visible line is written without a newline to avoid scrolling
     let mut preview = buffer.lines().take(rows).peekable();
     while let Some(line) = preview.next() {
         if preview.peek().is_some() {
-            writeln!(stderr, "{line}")?;
+            writeln!(frame, "{line}")?;
         } else {
-            write!(stderr, "{line}")?;
+            write!(frame, "{line}")?;
         }
     }
-    stderr.flush()
+    frame.flush()
 }
 
 fn run_sort_loop(args: &Cli) -> io::Result<Vec<String>> {
