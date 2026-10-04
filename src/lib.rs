@@ -241,7 +241,7 @@ mod tests {
         };
         let mut buffer = SortedBuffer::new(p);
         assert!(!buffer.insert("a"));
-        assert!(buffer.into_lines().is_empty());
+        assert_eq!(buffer.into_lines(), Vec::<String>::new());
     }
 
     #[test]
