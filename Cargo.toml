@@ -8,7 +8,7 @@ repository = "https://github.com/pinelibg/rtsort"
 readme = "README.md"
 keywords = ["sort", "cli", "terminal", "streaming", "real-time"]
 categories = ["command-line-utilities"]
-exclude = [".github/", "AGENTS.md", "CLAUDE.md", "hk.pkl", "mise.toml", "renovate.json"]
+exclude = [".github/", "AGENTS.md", "CLAUDE.md", "hk.pkl", "mise.toml", "renovate.json", "rust-toolchain.toml"]
 
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
