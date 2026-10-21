@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.4](https://github.com/pinelibg/rtsort/compare/v0.6.3...v0.6.4) (2026-10-19)
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([#111](https://github.com/pinelibg/rtsort/issues/111)) ([aeef06d](https://github.com/pinelibg/rtsort/commit/aeef06d6b9206c4bc37915dd34ec47736a3c506a))
+* **deps:** lock file maintenance ([#113](https://github.com/pinelibg/rtsort/issues/113)) ([0a392be](https://github.com/pinelibg/rtsort/commit/0a392be0dbe7358debedb116a13027d98b0ebe04))
+* **deps:** lock file maintenance ([#115](https://github.com/pinelibg/rtsort/issues/115)) ([127b9d9](https://github.com/pinelibg/rtsort/commit/127b9d9c8fa402cfb3e1366fe6e5c5d0a9075713))
+
 ## [0.6.3](https://github.com/pinelibg/rtsort/compare/v0.6.2...v0.6.3) (2026-09-28)
 
 
