@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.6](https://github.com/pinelibg/rtsort/compare/v0.6.5...v0.6.6) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([#121](https://github.com/pinelibg/rtsort/issues/121)) ([14695ec](https://github.com/pinelibg/rtsort/commit/14695ec6628468103cd4d5020927c0a1054c7a4f))
+
 ## [0.6.5](https://github.com/pinelibg/rtsort/compare/v0.6.4...v0.6.5) (2026-10-30)
 
 
